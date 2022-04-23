@@ -1,4 +1,5 @@
 import { DivisionByZeroError, Rounding } from "../common";
+import { RationalNumber, sub as rationalSub } from "../rational/functions";
 
 export interface SafeNumber {
   readonly n: number;
@@ -18,7 +19,9 @@ export function fromDecimalString(s: string): SafeNumber {
 }
 
 export function fromNumber(n: number) {
-  return fromScalar(n);
+  return fromDecimalString(
+    n.toLocaleString("fullwide", { useGrouping: false })
+  );
 }
 
 export function toNumber(a: SafeNumber) {
@@ -67,22 +70,23 @@ export function toDecimalString(
     -> Push `2` to decimalStr
     -> update a/b = a/b - 2/27
     */
-  let fraction: SafeNumber = { n: fractionalPart, d: den };
-  let power = radix;
+  const [n, d] = shiftUntilInteger(fractionalPart, den);
+  let fraction: RationalNumber = { n, d };
   const bigRadix = BigInt(radix);
-  for (let i = 0; i < maxDecimals && fraction.n !== 0; i++) {
+  let power = bigRadix;
+  for (let i = 0; i < maxDecimals && fraction.n !== 0n; i++) {
     /** To compare x / p < a / b, we can simplify:
      * (x / p) < (a / b)
      * => x < (a * p) / b
      */
-    const x = Math.floor((fraction.n * power) / fraction.d);
+    const x = (fraction.n * power) / fraction.d;
     decimalPart = decimalPart * bigRadix + BigInt(x);
-    fraction = sub(fraction, { n: x, d: power });
-    power = power * radix;
+    fraction = rationalSub(fraction, { n: x, d: power });
+    power = power * bigRadix;
   }
 
   let decimalStr = "";
-  if (fraction.n !== 0) {
+  if (fraction.n !== 0n) {
     // The number is truncated. Meaning positive got smaller, Negative got even more negative.
     // This means rounding after the algorithm above is towards -Infinity: Rounding.Floor
 
@@ -123,9 +127,9 @@ export function toDecimalString(
     }
     function nearestNeighbor(halfCase: () => void) {
       // -: is less than half, 0: it's half, +: more than half
-      const halfDifference = 2 * fraction.n - fraction.d;
+      const halfDifference = 2n * fraction.n - fraction.d;
 
-      if (halfDifference === 0) {
+      if (halfDifference === 0n) {
         halfCase();
       } else if (halfDifference < 0) {
         // Already truncated down
@@ -266,17 +270,42 @@ function s_cmp(a: number, b: number): -1 | 0 | 1 {
 }
 
 // Internal utils
-function gcd(_a: number, _b: number) {
-  let a = Math.abs(_a);
-  let b = Math.abs(_b);
-  // let f = 1;
+function shiftUntilInteger(a: number, b: number): [bigint, bigint] {
+  function shifter(n: number) {
+    const shift = () => {
+      n = n * 2;
+      const r = Math.floor(n);
+      n = n - r;
+      return r;
+    };
+    const hasMore = () => n > 0;
+    return { shift, hasMore };
+  }
+
+  const ai = Math.floor(Math.abs(a));
+  const bi = Math.floor(Math.abs(b));
+  let ar = BigInt(ai);
+  let br = BigInt(bi);
+  const as = shifter(Math.abs(a) - ai);
+  const bs = shifter(Math.abs(b) - bi);
 
   // Shift them until both of them are integers
-  while (a !== Math.floor(a) || b !== Math.floor(b)) {
-    a = a * 2;
-    b = b * 2;
-    // f = f * 2;
+  while (as.hasMore() || bs.hasMore()) {
+    ar = (ar << 1n) + BigInt(as.shift());
+    br = (br << 1n) + BigInt(bs.shift());
   }
+
+  if (a < 0) {
+    ar = -ar;
+  }
+  if (b < 0) {
+    br = -br;
+  }
+
+  return [ar, br];
+}
+function gcd(_a: number, _b: number) {
+  let [a, b] = shiftUntilInteger(Math.abs(_a), Math.abs(_b));
 
   while (b > 0) {
     let tmp = b;
@@ -284,8 +313,7 @@ function gcd(_a: number, _b: number) {
     a = tmp;
   }
 
-  // return a / f; <-- This would essentially make every `reduce` make every value an integer - Not needed
-  return a;
+  return Number(a);
 }
 function lcm(a: number, b: number) {
   return (a * b) / gcd(a, b);
