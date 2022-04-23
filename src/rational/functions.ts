@@ -1,5 +1,7 @@
+import { DivisionByZeroError, NegativeRootError } from "../common";
+
 // Only the first number can have sign
-type RationalNumber = [bigint, bigint];
+export type RationalNumber = [bigint, bigint];
 
 // Assumes only one `.` as decimal separator + optional starting symbol, no exponent.
 export function fromDecimalString(s: string): RationalNumber {
@@ -83,7 +85,7 @@ export function abs(a: RationalNumber): RationalNumber {
 }
 export function inv(a: RationalNumber): RationalNumber {
   if (a[0] === 0n) {
-    throw new Error("Division by 0");
+    throw new DivisionByZeroError();
   }
 
   return a[0] > 0 ? [a[1], a[0]] : [-a[1], -a[0]];
@@ -158,7 +160,7 @@ function s_root(a: bigint, b: bigint) {
   }
   if (a < 0n) {
     // In theory you can do it if b is odd but whatever.
-    throw new Error("Can't perform root of a negative value");
+    throw new NegativeRootError();
   }
 
   // Newton's method to calculate the nth root of A
