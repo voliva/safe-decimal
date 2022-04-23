@@ -1,5 +1,4 @@
 import { DivisionByZeroError, Rounding } from "../common";
-import { RationalNumber, sub as rationalSub } from "../rational/functions";
 
 export interface SafeNumber {
   readonly n: number;
@@ -46,47 +45,25 @@ export function toDecimalString(
 
   // Split fractional part from integer part
   let integerPart = Math.floor(num / den);
-  const fractionalPart = num - integerPart * den;
+  let fractionalPart = num - integerPart * den;
 
   if (fractionalPart === 0) {
     return sign + integerPart.toString(radix);
   }
 
   let decimalPart = BigInt(0);
-  /*
-    E.g. radix = 3;
-  
-    Is 2/3 < a/b ? No
-    Is 1/3 < a/b ? Yes!
-    -> Push `1` to decimalStr
-    -> update a/b = a/b - 1/3;
-    
-    Is 2/9 < a/b ? No
-    Is 1/9 < a/b ? No
-    // 0/9 must be < a/b
-    -> Push `0` to decimalStr
-  
-    Is 2/27 < a/b ? Yes!
-    -> Push `2` to decimalStr
-    -> update a/b = a/b - 2/27
-    */
-  const [n, d] = shiftUntilInteger(fractionalPart, den);
-  let fraction: RationalNumber = { n, d };
   const bigRadix = BigInt(radix);
-  let power = bigRadix;
-  for (let i = 0; i < maxDecimals && fraction.n !== 0n; i++) {
-    /** To compare x / p < a / b, we can simplify:
-     * (x / p) < (a / b)
-     * => x < (a * p) / b
-     */
-    const x = (fraction.n * power) / fraction.d;
-    decimalPart = decimalPart * bigRadix + BigInt(x);
-    fraction = rationalSub(fraction, { n: x, d: power });
-    power = power * bigRadix;
+  for (let i = 0; i < maxDecimals && fractionalPart !== 0; i++) {
+    // Multiply a/b by radix, extract integer, repeat.
+    fractionalPart *= radix;
+    const integerValue = Math.floor(fractionalPart / den);
+    fractionalPart = fractionalPart - integerValue * den;
+
+    decimalPart = decimalPart * bigRadix + BigInt(integerValue);
   }
 
   let decimalStr = "";
-  if (fraction.n !== 0n) {
+  if (fractionalPart !== 0) {
     // The number is truncated. Meaning positive got smaller, Negative got even more negative.
     // This means rounding after the algorithm above is towards -Infinity: Rounding.Floor
 
@@ -127,9 +104,9 @@ export function toDecimalString(
     }
     function nearestNeighbor(halfCase: () => void) {
       // -: is less than half, 0: it's half, +: more than half
-      const halfDifference = 2n * fraction.n - fraction.d;
+      const halfDifference = 2 * fractionalPart - den;
 
-      if (halfDifference === 0n) {
+      if (halfDifference === 0) {
         halfCase();
       } else if (halfDifference < 0) {
         // Already truncated down
