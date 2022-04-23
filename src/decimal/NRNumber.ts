@@ -6,8 +6,6 @@ import {
   cos,
   div,
   exp,
-  fromDecimalString,
-  fromNumber,
   inv,
   log,
   log10,
@@ -15,42 +13,23 @@ import {
   mul,
   neg,
   pow,
-  SafeNumber,
   sin,
   sub,
-  tan,
-  toDecimalString,
-  toFixed,
-  toFractionString,
-  toNumber,
+  tan
 } from "./functions";
-
-export type SafeNumberInput = SafeNumber | string | number;
-function fromInput(input: SafeNumberInput): SafeNumber {
-  if (typeof input === "object") {
-    return input;
-  }
-  if (typeof input === "string") {
-    return fromDecimalString(input);
-  }
-  return fromNumber(input);
-}
+import { NRRational } from "./NRRational";
+import { fromInput, NRRationalInput } from "./parser";
+import { toDecimalString, toFixed, toFractionString, toNumber } from "./serializer";
 
 // Stands for No recurring number
-export class NRN implements SafeNumber {
+export class NRNumber implements NRRational {
   public readonly d: number;
   public readonly n: number;
 
-  constructor(input: SafeNumberInput) {
+  constructor(input: NRRationalInput) {
     const safeNumber = fromInput(input);
     this.d = safeNumber.d;
     this.n = safeNumber.n;
-
-    // This one avoids creating a new object
-    // Not recommended through https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/setPrototypeOf
-    // const safeNumber: any = fromInput(input);
-    // Object.setPrototypeOf(safeNumber, NRN.prototype);
-    // return safeNumber;
   }
 
   public toNumber() {
@@ -78,62 +57,62 @@ export class NRN implements SafeNumber {
   }
 
   public neg() {
-    return new NRN(neg(this));
+    return new NRNumber(neg(this));
   }
   public abs() {
-    return new NRN(abs(this));
+    return new NRNumber(abs(this));
   }
   public inv() {
-    return new NRN(inv(this));
+    return new NRNumber(inv(this));
   }
-  public add(b: SafeNumberInput) {
-    return new NRN(add(this, fromInput(b)));
+  public add(b: NRRationalInput) {
+    return new NRNumber(add(this, fromInput(b)));
   }
-  public sub(b: SafeNumberInput) {
-    return new NRN(sub(this, fromInput(b)));
+  public sub(b: NRRationalInput) {
+    return new NRNumber(sub(this, fromInput(b)));
   }
-  public mul(b: SafeNumberInput) {
-    return new NRN(mul(this, fromInput(b)));
+  public mul(b: NRRationalInput) {
+    return new NRNumber(mul(this, fromInput(b)));
   }
-  public div(b: SafeNumberInput) {
-    return new NRN(div(this, fromInput(b)));
+  public div(b: NRRationalInput) {
+    return new NRNumber(div(this, fromInput(b)));
   }
 
   // Functions that can result in irrational numbers: Meaning precision is not guaranteed on these ones.
   public log() {
-    return new NRN(log(this));
+    return new NRNumber(log(this));
   }
   public log10() {
-    return new NRN(log10(this));
+    return new NRNumber(log10(this));
   }
   public log2() {
-    return new NRN(log2(this));
+    return new NRNumber(log2(this));
   }
 
   // The following perform the division before, so precision can be lost before running the function
   public sin() {
-    return new NRN(sin(this));
+    return new NRNumber(sin(this));
   }
   public cos() {
-    return new NRN(cos(this));
+    return new NRNumber(cos(this));
   }
   public tan() {
-    return new NRN(tan(this));
+    return new NRNumber(tan(this));
   }
   public exp() {
-    return new NRN(exp(this));
+    return new NRNumber(exp(this));
   }
-  public pow(b: SafeNumberInput) {
-    return new NRN(pow(this, fromInput(b)));
+  public pow(b: NRRationalInput) {
+    return new NRNumber(pow(this, fromInput(b)));
   }
 
   // Assumes number is reduced. -1 = a is bigger, 0 = both are equal, 1 = b is bigger.
-  public cmp(b: SafeNumberInput) {
+  public cmp(b: NRRationalInput) {
     return cmp(this, fromInput(b));
   }
 }
 
-export const ZERO = new NRN(0);
-export const ONE = new NRN(1);
-export const PI = new NRN(Math.PI);
-export const E = new NRN(Math.E);
+export const ZERO = new NRNumber(0);
+export const ONE = new NRNumber(1);
+export const PI = new NRNumber(Math.PI);
+export const E = new NRNumber(Math.E);

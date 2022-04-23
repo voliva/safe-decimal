@@ -1,6 +1,6 @@
 # Non-recurring Decimals
 
-Library that solves the `0.1 + 0.2 != 0.3` problem, that uses fractions to avoid using numbers with recurring decimals.
+Library that solves the `0.1 + 0.2 != 0.3` problem with fractions, to avoid using numbers with recurring decimals.
 
 WIP - This package is not exporting anything yet.
 
@@ -12,28 +12,28 @@ TODO
 
 Warning: long section ahead, it covers the theory behind this library.
 
-Currently there's a common misconception that the fact that `0.1 + 0.2 != 0.3` in JavaScript is due to the fact that it uses floating point numbers.
+Currently there's a common misconception that `0.1 + 0.2 != 0.3` in JavaScript is due to the fact that it uses floating point numbers.
 
-However, that's not exactly right. It's true that `0.1`, `0.2` and `0.3` (and infinite many others) can't be represented accurately in JavaScript, but it's not due to floating point. The problem is that when these numbers are represented as binary decimals, they have recurring decimals that at some point need to be cut off. Floating points in JS has a mantissa of 52 bits, so past those binary decimals information is lost.
+However, that's not exactly right. Although it's true that `0.1`, `0.2` and `0.3` (and infinite many others) can't be represented accurately in JavaScript, but it's not because it uses floating points. The problem is that when these numbers are represented as binary decimals, they have recurring decimals that at some point need to be cut off. Floating points in JS has a mantissa of 52 bits, so past those binary decimals information is lost.
 
-Let's remember what are decimals exactly. In base 10, when you have a number for instance `12.34`, what this actually means is:
+Let's remember what are decimals exactly. In base 10, when you have a number for instance `12.34`, what this is actually representing is:
 
 ```
 10^1 10^0 . 10^-1 10^-2
  1    2   .   3     4
 
-(1 x 10) + (2 * 1) + (3 / 10) + (4 / 100)
+(1 x 10) + (2 * 1) + (3 / 10) + (4 / 100) = 12.34
 ```
 
-it's actually just a sum of values, where every position has just a different factor on base 10.
+The decimal representation only means a sum of values, where every position has just a different factor on base 10.
 
 Starting from the comma, to the left side they keep raising 10^n - The first value is the units (10^0), the second value is the tens (10^1), the third value is the hundreds (10^100) and so on.
 
 And from the comma to the right side, it's the opposite: it divides by each power of ten. So the first digit is multiplied by 1/10, the second digit is multiplied by 1/100, and so on.
 
-Then `0.1` is just the decimal representation of the fraction `1/10` in base 10. `0.2` is the decimal representation of the fraction `2/10` which can be simplified to `1/5`, and `0.3` is the decimal representation of `3/10`.
+Then `0.1` is just the decimal representation in base 10 of the fraction `1/10`. `0.2` is the decimal representation of the fraction `2/10` which can be simplified to `1/5`, and `0.3` is the decimal representation of `3/10`.
 
-We can use this definition of a decimal representation for base 2, which is the base that computers use. Let's represent `5.3125`. To transform the decimals, we will use an algorithm that's quite simple: to get the next decimal, you multiply the value by the base (2), and extract the unit value from the result. The algorithm ends when the value reaches 0.
+We can use this definition of a decimal representation but applied to base 2, which is the base that computers use. As an example let's transform `5.3125` to binary. To transform the decimals, we will use an algorithm that's quite simple: to get the next decimal, you multiply the value by the base (2), and extract the unit value from the result. The algorithm ends when the value reaches 0.
 
 ```
 5.3125 = 5 + 0.3125;
@@ -52,7 +52,7 @@ We can use this definition of a decimal representation for base 2, which is the 
 
 `5.3125` in decimal is the same as `101.0101` in binary, and no precision is lost.
 
-However, when we try to represent e.g. `0.3` in binary, we find ourselves in a loop when running the algorithm above:
+However, if we try to represent e.g. `0.3` in binary, we find ourselves in a loop when running the algorithm above:
 
 ```
 2^-1 -> 0.3 * 2 = 0.6 -> [0]
@@ -64,7 +64,7 @@ However, when we try to represent e.g. `0.3` in binary, we find ourselves in a l
 2^-6 -> 0.6 * 2 = 1.2 -> [1]
 2^-7 -> 0.2 * 2 = 0.4 -> [0]
 ...
-// And it will keep going on forever
+// And it will keep going on forever, the value will never be 0.
 
 0.3 = 1/2 + 1/32 + 1/64 + 1/512 + ...
 
@@ -72,19 +72,21 @@ However, when we try to represent e.g. `0.3` in binary, we find ourselves in a l
 0   .  0     1    0    0    1    1   0 ...
 ```
 
-So `0.3` in decimal is `0.01001100110011001...` with 1001 recurring. And now we have a problem, because JS floats have a mantissa of 52 bits, which is really long, but because it has to cut, there's precision that gets lost. But the same would happen if you use fixed point - With fixed point representation you still have decimals, with the difference that the position of the comma within your number is set beforehand, it's fixed in position. But you still cut the decimal at some point or another.
+So `0.3` in decimal is `0.01001100110011001...` with 1001 recurring. And now we have a problem, because JS floats have a mantissa of 52 bits, which is really long, but because it has to cut, there's precision that gets lost. But the same would happen if you use fixed point - With fixed point representation you still have decimals, with the difference that the position of the comma within your number is set beforehand, it's fixed in position. But you still cut the decimal at some point or another. When working with these decimals, the only solution would be to have an infinite amount of bits to store all those decimals, something that's currently not possible<sup>[Citation Needed]</sup>.
 
 So what decimals are representable in base 2 without loss of precision? Any rational number whose denominator is a power of 2. The example I picked earlier `5.3125` is the rational number `85 / 16`, so it's representable as a decimal base 2 without loss of precision.
 
-For this reason, `1/10`, `1/5` and `3/10` are not representable in base 2 without losing some detail, but they are representable in base 10 without recurring numbers. However, if one of the factors of the denominator of a simplified fraction is not `2` or `5` (which are the factors of the value of the base - 10), then you get recurring decimals, e.g. `1/3 = 0.3333..., 22/9 = 2.4444..., 1/7 = 0.142857142857...., 38/15 = 2.5333...`
+For this reason, `1/10`, `1/5` and `3/10` have recurring decimals in base 2: They all have `5` as factor on the denominator that causes it, so precision will be lost, but they are representable in base 10 without recurring numbers, because base 10 allows factors `2` and `5` (which are the factors of 10). However, if one of the factors were any other prime number, then you will get recurring decimals in base 10, e.g. `1/3 = 0.3333..., 22/9 = 2.4444..., 1/7 = 0.142857142857...., 38/15 = 2.5333...`
 
-Note that if computers were to work in base 3 instead of base 2, then `1/3` and `4/9` would be numbers that wouldn't have precision issues in computers, but would have in base 10: `1/3` is just `0.1` in base 3, and `22/9` is `2.11`.
+Note that if computers were to work in base 3 instead of base 2, then `1/3` and `22/9` would be numbers that wouldn't have precision issues, but would have in base 10: In base 3 `1/3` is just `0.1`, and `22/9` is `2.11`.
 
-A common way of fixing this is to multiply these numbers by 10 until they are integers. For instance, applications that work with numbers that are divisible by 100 (e.g. any shopping site that uses USD or EUR) store numeric values as "number of cents", essentially multiplying every value by 100 getting rid of all decimals. However, in order to avoid dealing with recurring decimal issues, it's not necessary to multiply by 100. Multiplying the decimal values by 25 instead would suffice, because we eliminate the two 5 factors in the denominator, and every number, even if it's still a float, it would always be representable in base 2 without recurring decimals.
+A common way of fixing this is to avoid decimals altogether, usually by multiply these numbers by powers of 10. For instance, applications that work with numbers that are usually divided into hundreds (e.g. currencies with cents as division) store numeric values as "number of cents", essentially multiplying every value by 100.
 
 One of the utilities that this package exports `RationalNumber` is a generalization of this solution, so that it works for any decimal, not only the ones with a specific division (e.g. by 100).
 
 With rational numbers, instead of storing a single decimal number, you store two integers (e.g. `0.2 = 1/5, 0.25 = 1/4, 3.33.. = 10/3, etc.`. And then every operation is just operation with rationals, which comes down to integer operations. When you want to get the actual value, you perform the division.
+
+As mentioned, this is a just generalization of the "Multiply everything by a power of 10". In the case when working with currencies with cents, when you have a variable `cost = 335` this is actually representing the rational number `335 / 100 = 3.35`. In this case though, `RationalNumber` would internally represent this fraction as the simplified form `67 / 20`, because it's generalized to accept any fraction, not only the ones with denominator 100.
 
 These `RationalNumber` have true arbitrary precision, because as they are integers, they can be stored as bigints. However, operations with rational numbers are significantly more expensive than just doing it with numbers directly (e.g. to add two rational numbers you need to run the Euclidean algorithm to find the least common multiple of the denominators), and if these bigints keep growing the operation gets even more expensive.
 
@@ -92,7 +94,9 @@ Most of the time though, you don't really need arbitrary precision - What really
 
 Essentially, it's like a rational number but where both numerator and denominator are decimals, but "Safe decimals". Those that can be represented in base 2 without recurring decimals.
 
-As an example, let's do the operation `0.3333…/0.1`, and see what inner values does the library have:
+In the case of the previous example of 3.35, without the constraint of integers, the fraction `67 / 20` becomes `16.75 / 5`. `16.75` is still representable in binary, it's `10000.11`, so no precision is lost - no mathematical error happens. When we need to get the _actual_ result 3.35, we can compute it and write it as base 10 string without losing any precision at all, and we don't need to work with bigints, which they are really not necessary because we're working with numbers with less than 52 significant digits.
+
+As another example, let's do the operation `0.3333…/0.1`, and see what inner values does the library have:
 
 ```ts
 const aThird = new NRNumber(1).div(3); // or new NRNumber({n: 1, d: 3})
