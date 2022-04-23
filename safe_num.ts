@@ -76,6 +76,10 @@ export function toDecimalString(
   Is 2/27 < a/b ? Yes!
   -> Push `2` to decimalStr
   -> update a/b = a/b - 2/27
+
+  TODO precision on this step is lost on recurring numbers with big decimals.
+  We'll have to use bigint (try new NRN(2.2).toDecimalString({ maxDecimals: 20 }),
+  the result is worse than Bignumber.js)
   */
   let fraction: SafeNumber = { n: fractionalPart, d: den };
   let power = radix;
