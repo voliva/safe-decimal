@@ -120,5 +120,6 @@ export class NRNumber implements NRRational {
 export const ZERO = new NRNumber(0);
 export const ONE = new NRNumber(1);
 // TODO precalculate - fromNumber could be expensive
-export const PI = new NRNumber(Math.PI);
-export const E = new NRNumber(Math.E);
+// Shortcut transcendental numbers that don't have a fraction result
+export const PI = new NRNumber({ n: Math.PI, d: 1 });
+export const E = new NRNumber({ n: Math.E, d: 1 });

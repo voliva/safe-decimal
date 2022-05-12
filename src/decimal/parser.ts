@@ -34,9 +34,12 @@ export function fromDecimalString(s: string): NRRational {
   return { n, d };
 }
 
-const MAX_SCALE = Math.pow(2, 53);
+const MAX_SCALE = Number.MAX_SAFE_INTEGER;
 export function fromNumber(n: number, scale = 1): NRRational {
-  // console.log(scale);
+  console.log(n);
+  const sign = n < 0 ? -1 : 1;
+  n = Math.abs(n);
+
   // Seems like we can't do subtractions, but inverting numbers is fine!
   // 3.2 - 3 = 0.20000....018
   // 1 / 3.2 = 0.3125 | 1 / 0.3125 = 3.2
@@ -51,9 +54,9 @@ export function fromNumber(n: number, scale = 1): NRRational {
   const integerPart = Number(s.substring(0, decimalPosition));
   const decimalPart = Number(s.substring(decimalPosition));
 
-  if (decimalPart === 0) {
+  if (decimalPart === 0 || scale >= MAX_SCALE) {
     return {
-      n,
+      n: sign * n,
       d: 1,
     };
   }
@@ -61,22 +64,15 @@ export function fromNumber(n: number, scale = 1): NRRational {
   // num = integerPart + 1 / inverseDecimal
   const inverseDecimal = 1 / decimalPart;
 
-  const newScale = scale * integerPart;
-  if (newScale > MAX_SCALE) {
-    return {
-      n: integerPart,
-      d: 1,
-    };
-  }
-
   // num = integerPart + 1 / fraction
   const fraction = fromNumber(inverseDecimal, scale * integerPart);
 
   // num = integerPart + inverseFraction
   const inverseFraction = inv(fraction);
 
+  console.log(sign, integerPart, inverseFraction);
   return {
-    n: integerPart * inverseFraction.d + inverseFraction.n,
+    n: sign * (integerPart * inverseFraction.d + inverseFraction.n),
     d: inverseFraction.d,
   };
 }
