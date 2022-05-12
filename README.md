@@ -8,6 +8,15 @@ WIP - This package is not exporting anything yet.
 
 TODO
 
+## Benchmark
+
+https://github.com/scurker/currency.js
+https://github.com/adamwdraper/Numeral-js
+Bignumber.JS and family
+https://github.com/devrafalko/exact-math
+https://github.com/josdejong/mathjs
+https://github.com/ashnur/rationals
+
 ## Explanation
 
 Warning: long section ahead, it covers the theory behind this library.

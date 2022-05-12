@@ -5,10 +5,10 @@ export function neg(a: NRRational): NRRational {
   return { n: -a.n, d: a.d };
 }
 export function abs(a: NRRational): NRRational {
-  return a.d >= 0 ? a : neg(a);
+  return a.n >= 0 ? a : neg(a);
 }
 export function inv(a: NRRational): NRRational {
-  if (a.d === 0) {
+  if (a.n === 0) {
     throw new DivisionByZeroError();
   }
 

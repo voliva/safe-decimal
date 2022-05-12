@@ -29,6 +29,7 @@ export function toDecimalString(
     return sign + integerPart.toString(radix);
   }
 
+  let totalDecimals = 0;
   let decimalPart = BigInt(0);
   const bigRadix = BigInt(radix);
   for (let i = 0; i < maxDecimals && fractionalPart !== 0; i++) {
@@ -37,40 +38,44 @@ export function toDecimalString(
     const integerValue = Math.floor(fractionalPart / den);
     fractionalPart = fractionalPart - integerValue * den;
 
+    totalDecimals++;
     decimalPart = decimalPart * bigRadix + BigInt(integerValue);
   }
 
   let decimalStr = "";
   if (fractionalPart !== 0) {
-    // The number is truncated. Meaning positive got smaller, Negative got even more negative.
-    // This means rounding after the algorithm above is towards -Infinity: Rounding.Floor
+    // decimalPart might increment, but addition might have it overflow.
+    const modulo = bigRadix ** BigInt(totalDecimals);
 
     function increment() {
-      if (maxDecimals === 0) {
+      decimalPart++;
+      if (decimalPart >= modulo) {
         integerPart++;
-      } else {
-        decimalPart++;
+        decimalPart -= modulo;
       }
     }
+
+    // The number is truncated. Meaning both positive and negative got towards zero: positive got smaller, negative got larger.
+    // This means rounding after the algorithm above is Rounding.Down
     function awayFromZero() {
-      if (sign === "-") {
-        // Already away from 0
-      } else {
-        increment();
-      }
-    }
-    function towardsZero() {
-      if (sign === "-") {
-        increment();
-      } else {
-        // Already closer to 0
-      }
-    }
-    function towardsInfinity() {
       increment();
     }
+    function towardsZero() {
+      // Already rounded towards zero
+    }
+    function towardsInfinity() {
+      if (sign === "-") {
+        // Already closer to infinity
+      } else {
+        increment();
+      }
+    }
     function awayFromInfinity() {
-      // Already rounded away from infinity
+      if (sign === "-") {
+        increment();
+      } else {
+        // Already away from to infinity
+      }
     }
     function towardsEven() {
       if (
@@ -94,7 +99,7 @@ export function toDecimalString(
     }
 
     switch (rounding) {
-      case Rounding.Up:
+      case Rounding.Up: // <- 0 ->
         awayFromZero();
         break;
       case Rounding.Down: // -> 0 <-
@@ -125,11 +130,16 @@ export function toDecimalString(
         nearestNeighbor(towardsEven);
         break;
     }
-    decimalStr = decimalPart.toString(radix);
-    // Strip away 0's that might have happened
+    decimalStr = decimalPart.toString(radix).padStart(totalDecimals, "0");
+    // Strip away 0's that might have happened on the end
     decimalStr = decimalStr.replace(/0+$/, "");
   } else {
-    decimalStr = decimalPart.toString(radix);
+    decimalStr = decimalPart.toString(radix).padStart(totalDecimals, "0");
+  }
+
+  if (integerPart === 0 && !decimalStr) {
+    // Avoid sign
+    return "0";
   }
 
   return (
