@@ -21,7 +21,11 @@ export function add(a: NRRational, b: NRRational): NRRational {
   // lcm_val is a multiple of both a.d and b.d, thus these two divisions should be safe.
   const n = (a.n * lcm_val) / a.d + (b.n * lcm_val) / b.d;
 
-  return reduce({ n, d: lcm_val });
+  const r = reduce({ n, d: lcm_val });
+  // console.log(a, b);
+  // console.log(n, lcm_val);
+  // console.log(r);
+  return r;
 }
 export function sub(a: NRRational, b: NRRational) {
   return add(a, neg(b));

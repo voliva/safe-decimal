@@ -15,11 +15,16 @@ import {
   pow,
   sin,
   sub,
-  tan
+  tan,
 } from "./functions";
 import { NRRational } from "./NRRational";
 import { fromInput, NRRationalInput } from "./parser";
-import { toDecimalString, toFixed, toFractionString, toNumber } from "./serializer";
+import {
+  toDecimalString,
+  toFixed,
+  toFractionString,
+  toNumber,
+} from "./serializer";
 
 // Stands for No recurring number
 export class NRNumber implements NRRational {
@@ -114,5 +119,6 @@ export class NRNumber implements NRRational {
 
 export const ZERO = new NRNumber(0);
 export const ONE = new NRNumber(1);
+// TODO precalculate - fromNumber could be expensive
 export const PI = new NRNumber(Math.PI);
 export const E = new NRNumber(Math.E);
