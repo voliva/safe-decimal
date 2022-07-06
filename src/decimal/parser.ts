@@ -87,3 +87,147 @@ export function fromInput(input: NRRationalInput): NRRational {
   }
   return fromNumber(input);
 }
+
+/*
+0.65214321 => No repeats => No, it's 2143 21[43]
+
+1,2,3,4,1,2,5,6
+{1}
+{12}
+{123}
+{1234}
+{12341, 1234|1}
+{123412, 1234|12} 1234 + 2
+{1234125}
+{12341256}
+
+0.5432104321 => 43210 repeats
+1,2,3,4,0,1,2,3,4,5
+{1}
+{12}
+{123}
+{1234}
+{12340}
+{123401, 12340|1}
+{1234012, 12340|12}
+{12340123, 12340|123}
+{123401234, 12340|1234} 12340 + 4
+{1234012345}
+
+0.215214321 => No repeats => No, it's 2143 21[43]
+
+1,2,3,4,1,2,5,6
+{1}
+{12}
+{123}
+{1234}
+{12341, 1234|1}
+{123412, 1234|12} 1234 + 2
+{1234125}
+{12341256}
+
+If I do it like this, then specially in binary, this sequence:
+
+0.1011001110001111
+
+which has no repeats will be detected as
+0.[101100111000111]1
+
+So I will just detect EXACT repeats
+
+121121123
+{1}
+{12}
+{121, 12|1}
+{1211, x, 121|1}
+{12112, 121|12}
+{121121, 121|121, 12112|1}
+{1211211, 121|121|1, x}
+{12112112, 121|121|12}
+{121121123, 121|121|x} => Can be greedy and take 12112112 or just the complete cycles 121121. All of these only if at least 2 complete cycles are present.
+*/
+
+class Candidate {
+  private currentIdx = 0;
+  private cyclesCompleted = 0;
+  private closed = false;
+
+  constructor(private buffer: number[]) {}
+
+  checkNext(v: number) {
+    if (this.closed) {
+      return false;
+    }
+    if (this.buffer[this.currentIdx] === v) {
+      this.currentIdx = (this.currentIdx + 1) % this.buffer.length;
+      if (this.currentIdx === 0) {
+        this.cyclesCompleted++;
+      }
+      return true;
+    }
+    this.closed = true;
+    return false;
+  }
+
+  getResultSequence() {
+    if (this.cyclesCompleted < 1) {
+      return [];
+    }
+    return new Array(this.cyclesCompleted + 2).fill(0).flatMap((_, i) => {
+      if (i <= this.cyclesCompleted) {
+        return this.buffer;
+      }
+      return this.buffer.slice(0, this.currentIdx);
+    });
+  }
+}
+
+function findRepeats(sequence: number[]) {
+  const buffer: number[] = [];
+  const candidates: Candidate[] = [];
+  sequence.forEach((s) => {
+    if (buffer.length === 0) {
+      buffer.push(s);
+      return;
+    }
+    if (s === buffer[0]) {
+      candidates.push(new Candidate([...buffer]));
+    }
+    buffer.push(s);
+    candidates.forEach((c) => c.checkNext(s));
+  });
+  return candidates
+    .map((c) => c.getResultSequence())
+    .filter((seq) => seq.length > 0);
+}
+
+function parseDouble(num: number) {
+  const reverseBytes = new Uint8Array(new Float64Array([num]).buffer);
+  const bytes = reverseBytes.reverse();
+
+  const sign = (bytes[0] & 0x80) >> 7;
+  const exponent = ((bytes[0] & 0x7f) << 4) | ((bytes[1] & 0xf0) >> 4);
+  let mantissa = BigInt(bytes[1] & 0x0f);
+  for (let i = 2; i < 8; i++) {
+    mantissa = (mantissa << 8n) | BigInt(bytes[i]);
+  }
+
+  // 1 << 31 gives a negative number, so we need BigInt arithmetic
+  return [sign, exponent, mantissa] as const;
+}
+
+function numToBinarySeq(num: bigint) {
+  const result: number[] = [];
+  while (num > 0) {
+    result.push(Number(num & 0x01n));
+    num = num >> 1n;
+  }
+  return result;
+}
+
+function splitRepeatingPart(num: number) {
+  const [sign, exponent, mantissa] = parseDouble(num);
+
+  const sequence = numToBinarySeq(mantissa);
+  return findRepeats(sequence);
+}
