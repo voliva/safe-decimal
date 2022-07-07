@@ -204,29 +204,32 @@ function parseDouble(num: number) {
   const bytes = reverseBytes.reverse();
 
   const sign = (bytes[0] & 0x80) >> 7;
-  const exponent = ((bytes[0] & 0x7f) << 4) | ((bytes[1] & 0xf0) >> 4);
+  const exponent = (((bytes[0] & 0x7f) << 4) | ((bytes[1] & 0xf0) >> 4)) - 1023;
+
+  // 1 << 31 gives a negative number because bitwise operations work in int-32, so we need BigInt arithmetic
   let mantissa = BigInt(bytes[1] & 0x0f);
   for (let i = 2; i < 8; i++) {
     mantissa = (mantissa << 8n) | BigInt(bytes[i]);
   }
 
-  // 1 << 31 gives a negative number, so we need BigInt arithmetic
   return [sign, exponent, mantissa] as const;
 }
 
-// function constructDouble([sign, exponent, mantissa]: [number, number, bigint]) {
-//   const array = new Uint8Array(8);
+function constructDouble(sign: number, exponent: number, mantissa: bigint) {
+  const array = new Uint8Array(8);
 
-//   // exponent is 11 bits, we want to put the first 7 into array[0]: displace 4 bits
-//   array[0] = (sign << 7) | (exponent >> 4);
-//   // grab the 4 bits from exponent and 4 bits from mantissa
-//   array[1] = ((exponent & 0x0f) << 4) | Number(mantissa >> (52n - 4n));
-//   for (let i = 2; i < 8; i++) {
-//     array[i] = Number((mantissa >> (52n - 4n - 8n * BigInt(i - 1))) & 0x0ffn);
-//   }
+  const restoredExponent = exponent + 1023;
 
-//   return new Float64Array(array.reverse().buffer)[0];
-// }
+  // exponent is 11 bits, we want to put the first 7 into array[0]: displace 4 bits
+  array[0] = (sign << 7) | (restoredExponent >> 4);
+  // grab the 4 bits from exponent and 4 bits from mantissa
+  array[1] = ((restoredExponent & 0x0f) << 4) | Number(mantissa >> (52n - 4n));
+  for (let i = 2; i < 8; i++) {
+    array[i] = Number((mantissa >> (52n - 4n - 8n * BigInt(i - 1))) & 0x0ffn);
+  }
+
+  return new Float64Array(array.reverse().buffer)[0];
+}
 
 // These functions work with a reversed sequence! 123 will return [3,2,1]
 function numToBinarySeq(num: bigint) {
@@ -247,10 +250,110 @@ function binarySeqToNum(seq: number[]): bigint {
   return result;
 }
 
+function padStart<T>(arr: Array<T>, value: T, target: number) {
+  return [...new Array(Math.max(0, target - arr.length)).fill(value), ...arr];
+}
+function padEnd<T>(arr: Array<T>, value: T, target: number) {
+  return [...arr, ...new Array(Math.max(0, target - arr.length)).fill(value)];
+}
+
 export function splitRepeatingPart(num: number) {
   const [sign, exponent, mantissa] = parseDouble(num);
 
-  const sequence = numToBinarySeq(mantissa);
+  const sequence = padEnd(numToBinarySeq(mantissa), 0, 52);
   const repeats = findRepeats(sequence);
-  console.log(mantissa, sequence, repeats);
+
+  const nonRepeatingSeq = sequence.slice(repeats.length);
+  const newMantissa = binarySeqToNum(padStart(nonRepeatingSeq, 0, 52));
+  const nonRepeatingPart = constructDouble(sign, exponent, newMantissa);
+
+  /** The repeating part is quite challenging.
+   * the nonRepeatingPart is just cut from the original. Floats' mantissa always start on 1 which is omitted, so
+   * 1.1001000111000111000111 will get cut into 1.1001 => Mantissa is 1001
+   * But the repeating part in this case is 0.0000[000111000111000111]
+   * The idea I had is that I shift everything to add in more precision before inverting the number, in hopes to increase
+   * the likelyhood of receiving the actual result. But if I just shift and extend:
+   * 000111000111000111000...
+   * I have to update the exponent, but then this mantissa means 1.000111000111... which is wrong.
+   * The whole thing has to be shifted again until the first [1] is omitted, to 1.11000111000111...
+   * resulting in a mantissa of 11000111000111, with the exponent changed accordingly.
+   * And if the exponent underflows, then... we can't really split it
+   *
+   * Reminder that the sequences in this function are in opposite order, they start on the end of the mantissa
+   */
+  const paddedRepeatingSeq = [...repeats].reverse();
+  const firstOneIdx = paddedRepeatingSeq.indexOf(1);
+  if (firstOneIdx < 0) {
+    // It's just 0
+    console.log("no ones", sequence, repeats);
+    return [nonRepeatingPart, 0];
+  }
+  for (let i = 0; i < 52; i++) {
+    paddedRepeatingSeq.push(paddedRepeatingSeq[i]);
+  }
+  const repeatingSeq = paddedRepeatingSeq
+    .slice(firstOneIdx + 1, firstOneIdx + 1 + 52)
+    .reverse();
+
+  const repeatingMantissa = binarySeqToNum(repeatingSeq);
+  const repeatingExponent =
+    exponent - (firstOneIdx + 1) - nonRepeatingSeq.length;
+  if (repeatingExponent < -1022) {
+    // exponent underflow, can't split number
+    console.log("underflow", repeatingExponent, repeatingSeq);
+    return [num, 0];
+  }
+
+  const repeatingPart = constructDouble(
+    sign,
+    repeatingExponent,
+    repeatingMantissa
+  );
+  return [nonRepeatingPart, repeatingPart];
+}
+
+export function splitIntegerPart(num: number) {
+  if (Math.abs(num) < 1) {
+    return [0, num];
+  }
+  if (Math.abs(num) === 1) {
+    return [num, 0];
+  }
+
+  // Exponent must be >= 0 given the special cases above
+  const [sign, exponent, mantissa] = parseDouble(num);
+  const binarySeq = padEnd(numToBinarySeq(mantissa), 0, 52);
+  const repeats = findRepeats(binarySeq);
+  const mantissaSeq = [...binarySeq].reverse();
+  const intMantissa = padEnd(mantissaSeq.slice(0, exponent), 0, 52).reverse();
+  const integerPart = constructDouble(
+    sign,
+    exponent,
+    binarySeqToNum(intMantissa)
+  );
+
+  const fractionMantissa = mantissaSeq.slice(exponent);
+  const firstOne = fractionMantissa.indexOf(1);
+  if (firstOne < 0) {
+    // It's all zeroes - Always has been
+    return [num, 0];
+  }
+  const shiftedMantissa = fractionMantissa.slice(firstOne + 1);
+  // const shiftedMantissa = padEnd(
+  //   fractionMantissa.slice(firstOne + 1),
+  //   0,
+  //   52
+  // ).reverse();
+  for (let i = 0; i < 1; i++) {
+    // TODO fill with repeats, figure out index too
+  }
+
+  const fractionExponent = -firstOne - 1;
+  const fractionPart = constructDouble(
+    sign,
+    fractionExponent,
+    binarySeqToNum(shiftedMantissa)
+  );
+
+  return [integerPart, fractionPart];
 }

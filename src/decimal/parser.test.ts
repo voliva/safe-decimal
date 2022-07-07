@@ -1,10 +1,26 @@
 import { NRNumber } from "./NRNumber";
-import { fromDecimalString, fromInput, splitRepeatingPart } from "./parser";
+import {
+  fromDecimalString,
+  fromInput,
+  splitIntegerPart,
+  splitRepeatingPart,
+} from "./parser";
 import { toDecimalString } from "./serializer";
 
 describe.only("works", () => {
   it("works", () => {
-    splitRepeatingPart(12.12);
+    const original = Number.EPSILON;
+    // const [a, b] = splitRepeatingPart(original);
+    // console.log(a, b, a + b, 1 / original, 1 / b);
+
+    // const [c, d] = splitRepeatingPart(1 / b);
+    // console.log(c, d, 1 / d);
+
+    console.log(
+      splitIntegerPart(original),
+      splitIntegerPart(12.12),
+      12.12 - 12
+    );
   });
 });
 
