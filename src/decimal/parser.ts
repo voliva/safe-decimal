@@ -173,12 +173,9 @@ class Candidate {
     if (this.cyclesCompleted < 1) {
       return [];
     }
-    return new Array(this.cyclesCompleted + 2).fill(0).flatMap((_, i) => {
-      if (i <= this.cyclesCompleted) {
-        return this.buffer;
-      }
-      return this.buffer.slice(0, this.currentIdx);
-    });
+    return new Array(this.cyclesCompleted + 1)
+      .fill(0)
+      .flatMap(() => this.buffer);
   }
 }
 
@@ -198,7 +195,8 @@ function findRepeats(sequence: number[]) {
   });
   return candidates
     .map((c) => c.getResultSequence())
-    .filter((seq) => seq.length > 0);
+    .filter((seq) => seq.length > 0)
+    .reduce((best, v) => (best.length < v.length ? v : best), []);
 }
 
 function parseDouble(num: number) {
@@ -216,6 +214,21 @@ function parseDouble(num: number) {
   return [sign, exponent, mantissa] as const;
 }
 
+// function constructDouble([sign, exponent, mantissa]: [number, number, bigint]) {
+//   const array = new Uint8Array(8);
+
+//   // exponent is 11 bits, we want to put the first 7 into array[0]: displace 4 bits
+//   array[0] = (sign << 7) | (exponent >> 4);
+//   // grab the 4 bits from exponent and 4 bits from mantissa
+//   array[1] = ((exponent & 0x0f) << 4) | Number(mantissa >> (52n - 4n));
+//   for (let i = 2; i < 8; i++) {
+//     array[i] = Number((mantissa >> (52n - 4n - 8n * BigInt(i - 1))) & 0x0ffn);
+//   }
+
+//   return new Float64Array(array.reverse().buffer)[0];
+// }
+
+// These functions work with a reversed sequence! 123 will return [3,2,1]
 function numToBinarySeq(num: bigint) {
   const result: number[] = [];
   while (num > 0) {
@@ -224,10 +237,20 @@ function numToBinarySeq(num: bigint) {
   }
   return result;
 }
+function binarySeqToNum(seq: number[]): bigint {
+  let result = 0n;
 
-function splitRepeatingPart(num: number) {
+  for (let i = seq.length - 1; i >= 0; i--) {
+    result = (result << 1n) | BigInt(seq[i]);
+  }
+
+  return result;
+}
+
+export function splitRepeatingPart(num: number) {
   const [sign, exponent, mantissa] = parseDouble(num);
 
   const sequence = numToBinarySeq(mantissa);
-  return findRepeats(sequence);
+  const repeats = findRepeats(sequence);
+  console.log(mantissa, sequence, repeats);
 }

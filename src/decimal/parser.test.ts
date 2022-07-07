@@ -1,6 +1,12 @@
 import { NRNumber } from "./NRNumber";
-import { fromDecimalString, fromInput, fromNumber } from "./parser";
+import { fromDecimalString, fromInput, splitRepeatingPart } from "./parser";
 import { toDecimalString } from "./serializer";
+
+describe.only("works", () => {
+  it("works", () => {
+    splitRepeatingPart(12.12);
+  });
+});
 
 describe("fromDecimalString", () => {
   function checkParsing(input: string, output = input) {
