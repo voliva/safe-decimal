@@ -7,20 +7,24 @@ import {
 } from "./parser";
 import { toDecimalString } from "./serializer";
 
+// x -> (int)a + (safe)b + (repeat)c
+
+function invert(n: number) {
+  const [integer, fraction] = splitIntegerPart(n);
+  const [nonRepeat, repeat] = splitRepeatingPart(fraction);
+
+  return [integer, fraction, nonRepeat, repeat];
+}
+
 describe.only("works", () => {
   it("works", () => {
-    const original = Number.EPSILON;
     // const [a, b] = splitRepeatingPart(original);
-    // console.log(a, b, a + b, 1 / original, 1 / b);
+    console.log(splitIntegerPart(43534.5435));
 
     // const [c, d] = splitRepeatingPart(1 / b);
     // console.log(c, d, 1 / d);
 
-    console.log(
-      splitIntegerPart(original),
-      splitIntegerPart(12.12),
-      12.12 - 12
-    );
+    // console.log(invert(Number.EPSILON), invert(12.12), invert(43534.5435));
   });
 });
 

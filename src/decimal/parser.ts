@@ -338,15 +338,18 @@ export function splitIntegerPart(num: number) {
     // It's all zeroes - Always has been
     return [num, 0];
   }
-  const shiftedMantissa = fractionMantissa.slice(firstOne + 1);
-  // const shiftedMantissa = padEnd(
-  //   fractionMantissa.slice(firstOne + 1),
-  //   0,
-  //   52
-  // ).reverse();
-  for (let i = 0; i < 1; i++) {
-    // TODO fill with repeats, figure out index too
+  let shiftedMantissa = fractionMantissa.slice(firstOne + 1);
+  if (repeats.length) {
+    repeats.reverse();
+    for (let i = 0; i < exponent + firstOne + 1; i++) {
+      shiftedMantissa.push(repeats[i % repeats.length]);
+    }
+  } else {
+    shiftedMantissa = padEnd(shiftedMantissa, 0, 52);
   }
+  shiftedMantissa.reverse();
+  const mustBeMantissa = padEnd(numToBinarySeq(parseDouble(0.5435)[2]), 0, 52);
+  console.log(mustBeMantissa, shiftedMantissa);
 
   const fractionExponent = -firstOne - 1;
   const fractionPart = constructDouble(
