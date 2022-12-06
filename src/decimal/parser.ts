@@ -36,13 +36,62 @@ export function fromDecimalString(s: string): NRRational {
 
 const MAX_SCALE = Number.MAX_SAFE_INTEGER;
 export function fromNumber(n: number, scale = 1): NRRational {
-  console.log(n);
+  /**
+   * This function uses the algorithm that keeps inverting the value to get the fractional representation of that number.
+   *
+   * Example: 2.54
+   * 2.54 = 2 + 0.54 => 2
+   * 0.54 = 1 / 1.851851..
+   * 1.851851.. = 1 + 0.851851.. => 1
+   * 0.851851.. = 1 / 1.173913..
+   * 1.173913.. = 1 + 0.173913.. => 1
+   * 0.173913.. = 1 / 5.75
+   * 5.75 = 5 + 0.75 => 5
+   * 0.75 = 1 / 1.33..
+   * 1.33 = 1 + 0.33.. => 1
+   * 0.33 = 1 / 3
+   * 3 = 3 + 0 => 3
+   *
+   * Then the fractions can start unraveling up...
+   * 1.33 = 1 + 0.33.. = 1 + 1/3 = 4/3
+   * 0.75 = 1 / 1.33.. = 1 / 4/3 = 3/4
+   * 5.75 = 5 + 0.75 = 5 + 3/4 = 23/4
+   * 0.173913.. = 1 / 5.75 = 1 / 23/4 = 4/23
+   * 1.173913.. = 1 + 0.173913.. = 1 + 4/23 = 27/23
+   * 0.851851.. = 1 / 1.173913.. = 1 / 27/23 = 23/27
+   * 1.851851.. = 1 + 0.851851.. = 1 + 23/27 = 50/27
+   * 0.54 = 1 / 1.851851.. = 1 / 50/27 = 27/50
+   * 2.54 = 2 + 0.54 = 2 + 27/50 = 127/50
+   *
+   * (In this case we could've just multiplied by 100, but you don't want to do it with extremely small numbers such as Number.EPSILON)
+   *
+   * TODO there's a different way that maybe can be used to optimise this:
+   * There's a pattern when constructing these fractions. Given
+   * - V[i] is the `i` integer part from the result of the inversions.
+   *  - V[0] is the integer part of the original number
+   * - F[i] is the fractional representation at step `i`
+   *  - F[i].n is the numerator of the fractional representation at step `i`
+   *  - F[i].d is the denominator of the fractional representation at step `i`
+   * - F[-2] is 0/1
+   * - F[-1] is 1/0
+   *
+   * Then
+   * - F[i].n = F[i-2].n + F[i-1].n * V[i]
+   * - F[i].d = F[i-2].d + F[i-1].d * V[i]
+   *
+   * With the example above, we got the V values from inverting 2.54 are:
+   * [2,1,1,5,1,3]
+   *
+   * Expanding this into F's `n` and `d`:
+   * i -2 -1 0 1 2 3  4  5
+   * V       2 1 1 5  1  3
+   * n  0  1 2 3 5 28 33 127
+   * d  1  0 1 1 2 11 13 50
+   *
+   * Result is 127 / 50 again. This shouldn't require recurisivity because we don't need to reach the end to start unraveling.
+   */
   const sign = n < 0 ? -1 : 1;
   n = Math.abs(n);
-
-  // Seems like we can't do subtractions, but inverting numbers is fine!
-  // 3.2 - 3 = 0.20000....018
-  // 1 / 3.2 = 0.3125 | 1 / 0.3125 = 3.2
 
   const s = n.toLocaleString("fullwide", {
     useGrouping: false,
@@ -70,7 +119,6 @@ export function fromNumber(n: number, scale = 1): NRRational {
   // num = integerPart + inverseFraction
   const inverseFraction = inv(fraction);
 
-  console.log(sign, integerPart, inverseFraction);
   return {
     n: sign * (integerPart * inverseFraction.d + inverseFraction.n),
     d: inverseFraction.d,
