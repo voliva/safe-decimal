@@ -1,4 +1,4 @@
-import { inv } from "./functions";
+import { add, inv, neg, simplify, sub } from "./functions";
 import { NRRational } from "./NRRational";
 
 export function fromDecimalString(s: string): NRRational {
@@ -7,78 +7,96 @@ export function fromDecimalString(s: string): NRRational {
   if (decimalPosition >= 0) {
     // Trim irrelevant zeroes
     s = s.replace(/0+$/, "");
+    const [integerPart, fractionalPart] = s.split(".");
+
+    return fromParts(integerPart, fractionalPart);
   }
-
-  // Denominator is going to be 5 ** decimals
-  // but we can't let it grow past mantissa = 53-bit precision, because then
-  // we lose all precision on the denominator when trying to remove recurring
-  // numbers on the numerator.
-  // 5^n = 2^53 => n = log5(2^53) = 22.825
-  const MAX_DECIMALS = Number.POSITIVE_INFINITY;
-  let decimals = decimalPosition >= 0 ? s.length - decimalPosition - 1 : 0;
-  s = s.replace(".", "");
-  if (decimals > MAX_DECIMALS) {
-    const diff = decimals - MAX_DECIMALS;
-    const newDecimalPosition = s.length - diff;
-    decimals = MAX_DECIMALS;
-    s =
-      s.substring(0, newDecimalPosition) +
-      "." +
-      s.substring(newDecimalPosition);
-  }
-
-  // Essentially, we move the comma to remove all decimals
-  // then store the number as that of a multiple
-  const d = 5 ** decimals;
-  const n = Number(s) / 2 ** decimals;
-  return { n, d };
-}
-
-const MAX_SCALE = Math.pow(2, 53);
-export function fromNumber(n: number, scale = 1): NRRational {
-  // console.log(scale);
-  // Seems like we can't do subtractions, but inverting numbers is fine!
-  // 3.2 - 3 = 0.20000....018
-  // 1 / 3.2 = 0.3125 | 1 / 0.3125 = 3.2
-
-  const s = n.toLocaleString("fullwide", {
-    useGrouping: false,
-    minimumSignificantDigits: 21,
-  });
-  const decimalPosition = s.indexOf(".");
-
-  // num = integerPart + decimalPart
-  const integerPart = Number(s.substring(0, decimalPosition));
-  const decimalPart = Number(s.substring(decimalPosition));
-
-  if (decimalPart === 0) {
-    return {
-      n,
-      d: 1,
-    };
-  }
-
-  // num = integerPart + 1 / inverseDecimal
-  const inverseDecimal = 1 / decimalPart;
-
-  const newScale = scale * integerPart;
-  if (newScale > MAX_SCALE) {
-    return {
-      n: integerPart,
-      d: 1,
-    };
-  }
-
-  // num = integerPart + 1 / fraction
-  const fraction = fromNumber(inverseDecimal, scale * integerPart);
-
-  // num = integerPart + inverseFraction
-  const inverseFraction = inv(fraction);
 
   return {
-    n: integerPart * inverseFraction.d + inverseFraction.n,
-    d: inverseFraction.d,
+    n: Number(s),
+    d: 1,
   };
+}
+
+export function fromNumber(n: number): NRRational {
+  // When we receive a number it's really hard to get the original value, because we could have information already lost
+  // The best bet is to just use the .toString() method with as bigger precision as posible and roll with it.
+  // We might invert the number just once in case we see it reduces the amount of decimals.
+
+  function getIntegerAndFraction(value: number) {
+    const expRepr = value.toExponential(15); // 100 would give us best precision, but 15 makes 0.3 stay 0.3
+    const [numeric, exponent] = expRepr.split("e");
+    const sign = numeric.startsWith("-") ? "-" : "";
+    const numericWithoutPoint = numeric.replace(".", "").replace("-", "");
+    const expValue = Number(exponent);
+    if (expValue >= 0) {
+      const zeroes = new Array(
+        Math.max(0, expValue - numericWithoutPoint.length + 1)
+      )
+        .fill("0")
+        .join("");
+      const integerPart = numericWithoutPoint.slice(0, expValue + 1) + zeroes;
+      const fractionalPart = numericWithoutPoint
+        .slice(expValue + 1)
+        .replace(/0+$/, "");
+      return [sign + integerPart, fractionalPart];
+    } else {
+      const integerPart = "0";
+      const zeroes = new Array(-expValue - 1).fill("0").join("");
+      const fractionalPart = zeroes + numericWithoutPoint.replace(/0+$/, "");
+      return [sign + integerPart, fractionalPart];
+    }
+  }
+
+  const [integerPart, fractionalPart] = getIntegerAndFraction(n);
+
+  // Invert the fractional part. If we're lucky, we'll get rid of some of the recurring decimals
+  const invertedFractionalPart = fractionalPart.length
+    ? 1 / Number("0." + fractionalPart)
+    : 0;
+  const invertedSplit = getIntegerAndFraction(invertedFractionalPart);
+  if (invertedSplit[1].length < fractionalPart.length) {
+    const isNegative = integerPart.startsWith("-");
+    const integerPartRational = {
+      n: Math.abs(Number(integerPart)),
+      d: 1,
+    };
+
+    const parsed = add(
+      integerPartRational,
+      inv(fromParts(invertedSplit[0], invertedSplit[1]))
+    );
+    return isNegative ? neg(parsed) : parsed;
+  }
+
+  return fromParts(integerPart, fractionalPart);
+}
+
+function fromParts(integerPart: string, fractionalPart: string) {
+  const integerPartRational = {
+    n: Math.abs(Number(integerPart)),
+    d: 1,
+  };
+  const isNegative = integerPart.startsWith("-");
+
+  // Denominator is going to be 5 ** decimals. If you think about it on paper you would just multiply by
+  // powers of 10, but we don't really need the 2 factor because that's already representable in base 2.
+  const denominator = 5 ** fractionalPart.length;
+
+  // Doing Number(fractionalPart) gives us the numerator multiplied by the power of 10.
+  // But because we did the "5" trick on the denominator, we need to divide by the power of 2.
+  const correction = 2 ** fractionalPart.length;
+  const numerator = Number(fractionalPart) / correction;
+  const fractionPartRational = simplify({
+    n: numerator,
+    d: denominator,
+  });
+
+  const parsed = add(integerPartRational, fractionPartRational);
+  if (isNegative) {
+    return neg(parsed);
+  }
+  return parsed;
 }
 
 export type NRRationalInput = NRRational | string | number;

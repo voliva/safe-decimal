@@ -15,23 +15,13 @@ export function inv(a: NRRational): NRRational {
   return a.n > 0 ? { n: a.d, d: a.n } : { n: -a.d, d: -a.n };
 }
 export function add(a: NRRational, b: NRRational): NRRational {
-  // TODO benchmark (performance and precision) return reduce({ n: a.n * b.d + b.n * a.d, d: a.d * b.d });
-
-  const lcm_val = lcm(a.d, b.d);
-  // lcm_val is a multiple of both a.d and b.d, thus these two divisions should be safe.
-  const n = (a.n * lcm_val) / a.d + (b.n * lcm_val) / b.d;
-
-  const r = reduce({ n, d: lcm_val });
-  // console.log(a, b);
-  // console.log(n, lcm_val);
-  // console.log(r);
-  return r;
+  return simplify({ n: a.n * b.d + b.n * a.d, d: a.d * b.d });
 }
 export function sub(a: NRRational, b: NRRational) {
   return add(a, neg(b));
 }
 export function mul(a: NRRational, b: NRRational) {
-  return reduce({ n: a.n * b.n, d: a.d * b.d });
+  return simplify({ n: a.n * b.n, d: a.d * b.d });
 }
 export function div(a: NRRational, b: NRRational) {
   return mul(a, inv(b));
@@ -62,8 +52,15 @@ export function exp(a: NRRational) {
   return fromScalar(Math.exp(a.n / a.d));
 }
 export function pow(a: NRRational, b: NRRational) {
-  // x^m = exp(m log x)
-  return exp(mul(b, log(a)));
+  const bVal = b.n / b.d;
+  return simplify({
+    n: Math.pow(a.n, bVal),
+    d: Math.pow(a.d, bVal),
+  });
+
+  // TODO alternative, maybe better for big numbers -> x^m = exp(m log x)
+  // But what I like from :point_up: is that for isInteger(b) it gives an exact result. Maybe branch off based on this condition?
+  // return exp(mul(b, log(a)));
 }
 
 // Assumes number is reduced. -1 = a is bigger, 0 = both are equal, 1 = b is bigger.
@@ -76,66 +73,68 @@ function s_cmp(a: number, b: number): -1 | 0 | 1 {
   return 1;
 }
 
-// Internal utils
-function shiftUntilInteger(a: number, b: number): [bigint, bigint] {
-  function shifter(n: number) {
-    const shift = () => {
-      n = n * 2;
-      const r = Math.floor(n);
-      n = n - r;
-      return r;
+// TODO Benchmark alternative
+/**
+ * .toExponential() => grab exponent e (it's in base 10)
+ * then adjust multiplying/dividing by 2^Math.floor(e * Math.log2(10))
+ */
+export function simplify(value: NRRational) {
+  if (value.n === 0) {
+    // This has an exponent with a special meaning
+    // TODO check other types of special meaning... can they happen? (NaN, Infinity, etc.)
+    return {
+      n: 0,
+      d: 1,
     };
-    const hasMore = () => n > 0;
-    return { shift, hasMore };
   }
 
-  const ai = Math.floor(Math.abs(a));
-  const bi = Math.floor(Math.abs(b));
-  let ar = BigInt(ai);
-  let br = BigInt(bi);
-  const as = shifter(Math.abs(a) - ai);
-  const bs = shifter(Math.abs(b) - bi);
+  const [nSign, nExp, nMant] = parseDouble(value.n);
+  const [dSign, dExp, dMant] = parseDouble(value.d);
 
-  // Shift them until both of them are integers
-  while (as.hasMore() || bs.hasMore()) {
-    ar = (ar << 1n) + BigInt(as.shift());
-    br = (br << 1n) + BigInt(bs.shift());
-  }
+  // Goal is to keep this value as close to 0 as posible: Don't let numbers grow past float range.
+  const expSum = nExp + dExp;
+  const expChange = Math.trunc(-expSum / 2);
 
-  if (a < 0) {
-    ar = -ar;
-  }
-  if (b < 0) {
-    br = -br;
-  }
-
-  return [ar, br];
-}
-function gcd(_a: number, _b: number) {
-  let [a, b] = shiftUntilInteger(Math.abs(_a), Math.abs(_b));
-
-  while (b > 0) {
-    let tmp = b;
-    b = a % b;
-    a = tmp;
-  }
-
-  return Number(a);
-}
-function lcm(a: number, b: number) {
-  return (a * b) / gcd(a, b);
+  return {
+    n: constructDouble(nSign, nExp + expChange, nMant),
+    d: constructDouble(dSign, dExp + expChange, dMant),
+  };
 }
 
-// Assumes a valid number (d !== 0n)
-function reduce({ n, d }: NRRational): NRRational {
-  if (n === 0) {
-    return { n: 0, d: 1 };
-  }
-
-  const divisor = gcd(n, d);
-  return { n: n / divisor, d: d / divisor };
-}
-
+// Internal utils
 function fromScalar(a: number): NRRational {
-  return { n: a, d: 1 };
+  return simplify({ n: a, d: 1 });
+}
+
+function parseDouble(num: number) {
+  const reverseBytes = new Uint8Array(new Float64Array([num]).buffer);
+  const bytes = reverseBytes.reverse();
+
+  const sign = (bytes[0] & 0x80) >> 7;
+  const exponent = (((bytes[0] & 0x7f) << 4) | ((bytes[1] & 0xf0) >> 4)) - 1023;
+
+  // to do bitwise I would have to use BigInt - trying without it as a challenge (and "no bigint required" feature)
+  let mantissa = bytes[1] & 0x0f;
+  for (let i = 2; i < 8; i++) {
+    mantissa = mantissa * 2 ** 8 + bytes[i];
+  }
+
+  return [sign, exponent, mantissa] as const;
+}
+
+function constructDouble(sign: number, exponent: number, mantissa: number) {
+  const array = new Uint8Array(8);
+
+  const restoredExponent = exponent + 1023;
+
+  // exponent is 11 bits, we want to put the first 7 into array[0]: displace 4 bits
+  array[0] = (sign << 7) | (restoredExponent >> 4);
+  // grab the 4 bits from exponent and 4 bits from mantissa
+  array[1] =
+    ((restoredExponent & 0x0f) << 4) | Math.floor(mantissa / 2 ** (52 - 4));
+  for (let i = 2; i < 8; i++) {
+    array[i] = Math.floor(mantissa / 2 ** (52 - 4 - 8 * (i - 1))) & 0x0ff;
+  }
+
+  return new Float64Array(array.reverse().buffer)[0];
 }
