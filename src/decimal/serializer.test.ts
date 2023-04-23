@@ -20,7 +20,7 @@ describe.skip("toRational", () => {
 describe("toDecimalString", () => {
   describe("serializes to strings", () => {
     it("defaults to base 10 strings", () => {
-      expect(new NRNumber("98.76").toDecimalString()).toBe("98.76");
+      expect(new NRNumber(98.76).toDecimalString()).toBe("98.76");
     });
 
     it("defaults to 20 decimals", () => {

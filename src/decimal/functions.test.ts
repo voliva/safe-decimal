@@ -48,8 +48,8 @@ describe("inv", () => {
   });
 });
 
-describe.only("add", () => {
-  it.only("adds two numbers", () => {
+describe("add", () => {
+  it("adds two numbers", () => {
     function t(a: NRRationalInput, b: NRRationalInput, r: string) {
       expect(new NRNumber(a).add(b).toDecimalString({ maxDecimals: 47 })).toBe(
         r
