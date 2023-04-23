@@ -81,6 +81,9 @@ function fromParts(integerPart: string, fractionalPart: string) {
 
   // Denominator is going to be 5 ** decimals. If you think about it on paper you would just multiply by
   // powers of 10, but we don't really need the 2 factor because that's already representable in base 2.
+  // However, we can't let the number grow too big or we lose precision because they can't be represented. 22 = Math.floor(Log5(Number.MAX_SAFE_INTEGER))
+  // This could be avoided by using bigints. Or doing the inverse trick, but then we need to inverse without using division, which I don't know how to do.
+  fractionalPart = fractionalPart.slice(0, 22);
   const denominator = 5 ** fractionalPart.length;
 
   // Doing Number(fractionalPart) gives us the numerator multiplied by the power of 10.

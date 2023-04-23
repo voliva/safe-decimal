@@ -29,6 +29,14 @@ describe("fromDecimalString", () => {
     checkParsing("+0b10.0000000001", "2.0009765625");
   });
   it.skip("throws an error with invalid formats", () => {});
+
+  it("gives a fair enough approximation for numbers with lots of decimals", () => {
+    expect(
+      new NRNumber("0.12345678901234567890123456789012345678901234567890")
+        .toDecimalString()
+        .startsWith("0.12345678901234567")
+    ).toBe(true);
+  });
 });
 
 describe("fromNumber", () => {
