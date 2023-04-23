@@ -13,7 +13,7 @@ export function fromDecimalString(s: string): NRRational {
   }
 
   return {
-    n: Number(s),
+    n: Number(s.replace("+", "")),
     d: 1,
   };
 }
@@ -73,12 +73,31 @@ export function fromNumber(n: number): NRRational {
 }
 
 function fromParts(integerPart: string, fractionalPart: string) {
+  const isNegative = integerPart.startsWith("-");
+  integerPart = integerPart.replace(/^[\+\-]/, "");
+
   const integerPartRational = {
-    n: Math.abs(Number(integerPart)),
+    n: Number(integerPart),
     d: 1,
   };
-  const isNegative = integerPart.startsWith("-");
 
+  const prefix = integerPart.slice(0, 2);
+  const fractionPartRational = prefix.startsWith("0b")
+    ? fractionalPart2(fractionalPart)
+    : prefix.startsWith("0o")
+    ? fractionalPart8(fractionalPart)
+    : prefix.startsWith("0x")
+    ? fractionalPart16(fractionalPart)
+    : fractionalPart10(fractionalPart);
+
+  const parsed = add(integerPartRational, fractionPartRational);
+  if (isNegative) {
+    return neg(parsed);
+  }
+  return parsed;
+}
+
+function fractionalPart10(fractionalPart: string) {
   // Denominator is going to be 5 ** decimals. If you think about it on paper you would just multiply by
   // powers of 10, but we don't really need the 2 factor because that's already representable in base 2.
   // However, we can't let the number grow too big or we lose precision because they can't be represented. 22 = Math.floor(Log5(Number.MAX_SAFE_INTEGER))
@@ -90,16 +109,56 @@ function fromParts(integerPart: string, fractionalPart: string) {
   // But because we did the "5" trick on the denominator, we need to divide by the power of 2.
   const correction = 2 ** fractionalPart.length;
   const numerator = Number(fractionalPart) / correction;
-  const fractionPartRational = simplify({
+  return simplify({
     n: numerator,
     d: denominator,
   });
+}
 
-  const parsed = add(integerPartRational, fractionPartRational);
-  if (isNegative) {
-    return neg(parsed);
+function fractionalPart2(fractionalPart: string) {
+  // We'll be using parseInt, which returns NaN for empty strings
+  if (fractionalPart.length === 0) {
+    return {
+      n: 0,
+      d: 1,
+    };
   }
-  return parsed;
+  fractionalPart = fractionalPart.slice(0, 53);
+
+  return simplify({
+    n: parseInt(fractionalPart, 2),
+    d: 2 ** fractionalPart.length,
+  });
+}
+
+function fractionalPart8(fractionalPart: string) {
+  if (fractionalPart.length === 0) {
+    return {
+      n: 0,
+      d: 1,
+    };
+  }
+  fractionalPart = fractionalPart.slice(0, 17);
+
+  return simplify({
+    n: parseInt(fractionalPart, 8),
+    d: 8 ** fractionalPart.length,
+  });
+}
+
+function fractionalPart16(fractionalPart: string) {
+  if (fractionalPart.length === 0) {
+    return {
+      n: 0,
+      d: 1,
+    };
+  }
+  fractionalPart = fractionalPart.slice(0, 13);
+
+  return simplify({
+    n: parseInt(fractionalPart, 16),
+    d: 16 ** fractionalPart.length,
+  });
 }
 
 export type NRRationalInput = NRRational | string | number;
