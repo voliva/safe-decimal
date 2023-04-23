@@ -8,15 +8,6 @@ WIP - This package is not exporting anything yet.
 
 TODO
 
-## Benchmark
-
-https://github.com/scurker/currency.js
-https://github.com/adamwdraper/Numeral-js
-Bignumber.JS and family
-https://github.com/devrafalko/exact-math
-https://github.com/josdejong/mathjs
-https://github.com/ashnur/rationals
-
 ## Explanation
 
 Warning: long section ahead, it covers the theory behind this library.
@@ -83,7 +74,9 @@ However, if we try to represent `0.3` in binary, we find ourselves in a loop whe
 
 So `0.3` in base 10 is `0.01001100110011001...` with 1001 recurring in base 2. And now we have a problem, because JS floats have a mantissa of 52 bits, which is really long, but it can only fit the first 52 digits out of the infinite many others.
 
-But the same would happen if we were to use fixed point notation - The difference between fixed point and floating point is that with floating point is like scientific notation: Some bits are reserved for the exponent, and the rest is the mantissa, essentially moving the decimal point up or down through the mantissa. On the other hand, Fixed point you have a specific number of bits for the integer part, and a specific number of bits for the decimals, so you still have to cut the decimal at some point or another. When working with these decimals, the only solution would be to have an infinite amount of bits to store all those decimals, something that's currently not possible<sup>[Citation Needed]</sup>.
+Note: You might be asking "How come if 0.3 isn't representable as a binary number, computers can still print it after storing it to a variable?" As part of transforming a number to a string they just apply some rounding up to some decimals, which depends on the implementation. So even though 0.3 becomes `0.2999999999999999888977697537...` when represented as a double precision float, when it's printed out it's rounded to "0.3". It happens that when adding `0.1 + 0.2` it's adding two slightly larger numbers, and that results with a value slightly larger than 0.3 that doesn't get rounded to "0.3".
+
+The same problem would happen if we were to use fixed point notation - The difference between fixed point and floating point is that with floating point is like scientific notation: Some bits are reserved for the exponent, and the rest is the mantissa, essentially moving the decimal point up or down through the mantissa. On the other hand, Fixed point you have a specific number of bits for the integer part, and a specific number of bits for the decimals, so you still have to cut the decimal at some point or another. When working with these decimals, the only solution would be to have an infinite amount of bits to store all those decimals, something that's currently not possible<sup>[Citation Needed]</sup>.
 
 This raises a question: What decimals are representable in base 2 without loss of precision? Any rational number whose denominator is a power of 2. The example I picked earlier `5.3125` is the rational number `85 / 16`, so it's representable as a decimal base 2 without loss of precision.
 
