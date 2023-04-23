@@ -1,5 +1,22 @@
 import { Rounding } from "../common";
 import { NRNumber } from "./NRNumber";
+import { simplify, sub } from "./functions";
+
+describe.only("yes", () => {
+  it("works", () => {
+    const a = {
+      n: 3002399751580330 / 4,
+      d: Number.MAX_SAFE_INTEGER / 4,
+    };
+    const b = simplify(a);
+    console.log(a, b, sub(b, a));
+  });
+
+  // https://github.com/MikeMcl/bignumber.js/issues/80
+  // levantare otro por esto que es div != times(inverse)
+  // https://github.com/MikeMcl/big.js/wiki
+  // bignumber.js is perhaps more suitable for financial applications because the user doesn’t need to worry about losing precision unless an operation involving division is used.
+});
 
 describe("toNumber", () => {
   it("gives the result of the fraction as a number", () => {
