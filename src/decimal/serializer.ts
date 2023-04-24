@@ -29,29 +29,32 @@ export function toDecimalString(
     return sign + integerPart.toString(radix);
   }
 
-  let totalDecimals = 0;
-  let decimalPart = BigInt(0);
-  const bigRadix = BigInt(radix);
+  const decimalPart: number[] = [];
   for (let i = 0; i < maxDecimals && fractionalPart !== 0; i++) {
     // Multiply a/b by radix, extract integer, repeat.
     fractionalPart *= radix;
     const integerValue = Math.floor(fractionalPart / den);
     fractionalPart = fractionalPart - integerValue * den;
 
-    totalDecimals++;
-    decimalPart = decimalPart * bigRadix + BigInt(integerValue);
+    decimalPart.push(integerValue);
   }
+  const totalDecimals = decimalPart.length;
 
   let decimalStr = "";
   if (fractionalPart !== 0) {
-    // decimalPart might increment, but addition might have it overflow.
-    const modulo = bigRadix ** BigInt(totalDecimals);
-
     function increment() {
-      decimalPart++;
-      if (decimalPart >= modulo) {
+      let done = false;
+      for (let d = totalDecimals - 1; d >= 0; d--) {
+        decimalPart[d]++;
+        if (decimalPart[d] == radix) {
+          decimalPart[d] = 0;
+        } else {
+          done = true;
+          break;
+        }
+      }
+      if (!done) {
         integerPart++;
-        decimalPart -= modulo;
       }
     }
 
@@ -80,7 +83,7 @@ export function toDecimalString(
     function towardsEven() {
       if (
         (maxDecimals === 0 && integerPart % 2 === 1) ||
-        decimalPart % 2n === 1n
+        decimalPart[totalDecimals - 1] % 2 === 1
       ) {
         increment();
       }
@@ -130,11 +133,11 @@ export function toDecimalString(
         nearestNeighbor(towardsEven);
         break;
     }
-    decimalStr = decimalPart.toString(radix).padStart(totalDecimals, "0");
+    decimalStr = decimalPart.map((v) => v.toString(radix)).join("");
     // Strip away 0's that might have happened on the end
     decimalStr = decimalStr.replace(/0+$/, "");
   } else {
-    decimalStr = decimalPart.toString(radix).padStart(totalDecimals, "0");
+    decimalStr = decimalPart.map((v) => v.toString(radix)).join("");
   }
 
   if (integerPart === 0 && !decimalStr) {
