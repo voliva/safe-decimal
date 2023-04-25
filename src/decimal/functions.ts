@@ -58,7 +58,7 @@ export function pow(a: NRRational, b: NRRational) {
     d: Math.pow(a.d, bVal),
   });
 
-  // TODO alternative, maybe better for big numbers -> x^m = exp(m log x)
+  // TODO alternative, maybe better for big numbers -> a^b = exp(b log a)
   // But what I like from :point_up: is that for isInteger(b) it gives an exact result. Maybe branch off based on this condition?
   // return exp(mul(b, log(a)));
 }
