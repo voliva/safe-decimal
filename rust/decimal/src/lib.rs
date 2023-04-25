@@ -164,7 +164,7 @@ fn from_parts(integer_part: &str, fractional_part: &str) -> Result<NRNumber, Par
     let denominator = (5.0_f64).powf(fractional_part.len() as f64);
 
     let correction = (2.0_f64).powf(fractional_part.len() as f64);
-    let numerator = i128::from_str_radix(fractional_part, radix)? as f64 / correction;
+    let numerator = u128::from_str_radix(fractional_part, radix)? as f64 / correction;
     let fractional_part_rational = NRNumber {
         numerator,
         denominator,
@@ -177,7 +177,93 @@ fn from_parts(integer_part: &str, fractional_part: &str) -> Result<NRNumber, Par
     return Ok(parsed);
 }
 
-fn extract_prefix(value: &str) -> Result<(bool, u32, i128), ParseIntError> {
+fn fractional_part_10(fractional_part: &str) -> Result<NRNumber, ParseIntError> {
+    let fractional_part = &fractional_part[0..22];
+    let denominator = (5.0_f64).powf(fractional_part.len() as f64);
+
+    let correction = (2.0_f64).powf(fractional_part.len() as f64);
+    let numerator = u128::from_str_radix(fractional_part, 10)? as f64 / correction;
+    Ok(NRNumber {
+        numerator,
+        denominator,
+    })
+}
+
+struct Pad<I, T>
+where
+    I: Iterator<Item = T>,
+{
+    underlying: I,
+    size: usize,
+    value: T,
+    emitted: usize,
+}
+
+trait PadTrait: Iterator {
+    fn pad(self, size: usize, value: Self::Item) -> Pad<Self, Self::Item>
+    where
+        Self: Sized,
+    {
+        Pad {
+            underlying: self,
+            size,
+            value,
+            emitted: 0,
+        }
+    }
+}
+
+impl<I: Iterator> PadTrait for I {}
+
+impl<I, T> Iterator for Pad<I, T>
+where
+    I: Iterator<Item = T>,
+    T: Copy,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let result = self.underlying.next();
+        let complete = self.emitted >= self.size;
+        match (result, complete) {
+            (Some(v), _) => {
+                self.emitted += 1;
+                Some(v)
+            }
+            (None, false) => {
+                self.emitted += 1;
+                Some(self.value)
+            }
+            (None, true) => None,
+        }
+    }
+}
+
+fn fractional_part_2(fractional_part: &str) -> Result<NRNumber, ParseIntError> {
+    let first_one = fractional_part.find('1');
+    if first_one.is_none() {
+        return Ok(NRNumber {
+            numerator: 0.0,
+            denominator: 1.0,
+        });
+    }
+
+    // exponent is negative
+    let (fractional_part, exponent) = first_one
+        .map(|pos| (&fractional_part[(pos + 1)..], -(pos as i16 + 1)))
+        .unwrap();
+
+    let mantissa = fractional_part
+        .chars()
+        .take(52)
+        .map(|v| if v == '0' { 0 } else { 1 })
+        .pad(52, 0)
+        .fold(0_u64, |acc, x| acc << 1 | x);
+
+    Ok(simplify(construct_double(0, exponent, mantissa), 1.0))
+}
+
+fn extract_prefix(value: &str) -> Result<(bool, u32, u128), ParseIntError> {
     let is_negative = value.starts_with("-");
     let value = value.trim_start_matches(|c| c == '-' || c == '+');
     let radix = match &value[..2] {
@@ -188,10 +274,10 @@ fn extract_prefix(value: &str) -> Result<(bool, u32, i128), ParseIntError> {
     };
     let value = if radix == 10 { value } else { &value[2..] };
 
-    Ok((is_negative, radix, i128::from_str_radix(value, radix)?))
+    Ok((is_negative, radix, u128::from_str_radix(value, radix)?))
 }
 
-fn parse_double(value: f64) -> (u8, u16, u64) {
+fn parse_double(value: f64) -> (u8, i16, u64) {
     let value_bits = value.to_bits();
     // Shift 7 bytes to the right + 7 more bits 8X_XX_XX_XX__XX_XX_XX_XX
     let sign = (value_bits >> (8 * 7 + 7)) as u8;
@@ -201,11 +287,14 @@ fn parse_double(value: f64) -> (u8, u16, u64) {
     // Mantissa is the last 52 bits 00_0F_FF_FF__FF_FF_FF_FF
     let mantissa = value_bits & 0x00_0F_FF_FF__FF_FF_FF_FF;
 
+    // exponent is in bias notation
+    let exponent = (exponent as i16) - 1023;
+
     (sign, exponent, mantissa)
 }
-fn construct_double(sign: u8, exponent: u16, mantissa: u64) -> f64 {
+fn construct_double(sign: u8, exponent: i16, mantissa: u64) -> f64 {
     let sign = sign as u64;
-    let exponent = exponent as u64;
+    let exponent = (exponent + 1023) as u64;
     let value_bits = ((sign << (7 + 4)) | exponent) << (8 * 6 + 4) | mantissa;
 
     f64::from_bits(value_bits)
