@@ -24,3 +24,9 @@ impl FromStr for NRNumber {
         }
     }
 }
+
+impl NRNumber {
+    pub fn to_f64(&self) -> f64 {
+        self.numerator / self.denominator
+    }
+}

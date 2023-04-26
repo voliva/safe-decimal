@@ -38,7 +38,14 @@ pub fn from_parts(integer_part: &str, fractional_part: &str) -> Result<NRNumber,
 }
 
 pub fn fractional_part_10(fractional_part: &str) -> Result<NRNumber, ParseIntError> {
-    let fractional_part = &fractional_part[0..22];
+    let len = fractional_part.len().min(22);
+    if len == 0 {
+        return Ok(NRNumber {
+            numerator: 0.0,
+            denominator: 1.0,
+        });
+    }
+    let fractional_part = &fractional_part[0..len];
     let denominator = (5.0_f64).powf(fractional_part.len() as f64);
 
     let correction = (2.0_f64).powf(fractional_part.len() as f64);
@@ -122,7 +129,8 @@ pub fn fractional_part_16(fractional_part: &str) -> Result<NRNumber, ParseIntErr
 fn extract_prefix(value: &str) -> Result<(bool, u32, u128), ParseIntError> {
     let is_negative = value.starts_with("-");
     let value = value.trim_start_matches(|c| c == '-' || c == '+');
-    let radix = match &value[..2] {
+    let len = value.len().min(2);
+    let radix = match &value[..len] {
         "0b" => 2,
         "0o" => 8,
         "0x" => 16,
@@ -138,7 +146,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
-        assert_eq!(4, 4);
+    fn it_parses_numbers_in_base_10() {
+        assert_eq!(from_parts("12", "34").unwrap().to_f64(), 12.34);
+        assert_eq!(from_parts("0", "1").unwrap().to_f64(), 0.1);
+        assert_eq!(from_parts("+0", "2").unwrap().to_f64(), 0.2);
+        assert_eq!(from_parts("0", "").unwrap().to_f64(), 0.0);
+        assert_eq!(from_parts("3", "").unwrap().to_f64(), 3.0);
+        assert_eq!(from_parts("-3", "2").unwrap().to_f64(), -3.2);
+        assert_eq!(
+            from_parts(&u128::MAX.to_string(), "").unwrap().to_f64(),
+            u128::MAX as f64
+        );
     }
 }
