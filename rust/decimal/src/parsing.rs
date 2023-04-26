@@ -145,17 +145,28 @@ fn extract_prefix(value: &str) -> Result<(bool, u32, u128), ParseIntError> {
 mod tests {
     use super::*;
 
+    fn check_parsing(integer: &str, fraction: &str, output: f64) {
+        assert_eq!(from_parts(integer, fraction).unwrap().to_f64(), output);
+    }
+
     #[test]
     fn it_parses_numbers_in_base_10() {
-        assert_eq!(from_parts("12", "34").unwrap().to_f64(), 12.34);
-        assert_eq!(from_parts("0", "1").unwrap().to_f64(), 0.1);
-        assert_eq!(from_parts("+0", "2").unwrap().to_f64(), 0.2);
-        assert_eq!(from_parts("0", "").unwrap().to_f64(), 0.0);
-        assert_eq!(from_parts("3", "").unwrap().to_f64(), 3.0);
-        assert_eq!(from_parts("-3", "2").unwrap().to_f64(), -3.2);
-        assert_eq!(
-            from_parts(&u128::MAX.to_string(), "").unwrap().to_f64(),
-            u128::MAX as f64
-        );
+        check_parsing("12", "34", 12.34);
+        check_parsing("0", "1", 0.1);
+        check_parsing("+0", "2", 0.2);
+        check_parsing("0", "", 0.0);
+        check_parsing("3", "", 3.0);
+        check_parsing("-3", "2", -3.2);
+        check_parsing(&u128::MAX.to_string(), "", u128::MAX as f64);
+    }
+
+    #[test]
+    fn it_parses_numbers_in_hex() {
+        check_parsing("0x1A", "", 26.0);
+        check_parsing("+0x1b", "", 27.0);
+        check_parsing("0x0", "1", 0.0625);
+        check_parsing("-0xa", "fF", -10.99609375);
+        // TODO check_parsing with string, because it seems that f64 gets cut off after 505
+        check_parsing("0xbeef", "decaf", 48879.87028408050537109375);
     }
 }
