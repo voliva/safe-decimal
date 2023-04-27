@@ -1,5 +1,8 @@
 use std::{num::ParseIntError, str::FromStr};
 
+use convert::from_f64;
+
+mod convert;
 mod double;
 mod iter_pad;
 mod ops;
@@ -26,6 +29,10 @@ impl FromStr for NRNumber {
 }
 
 impl NRNumber {
+    pub fn from_f64(value: f64) -> NRNumber {
+        from_f64(value)
+    }
+
     pub fn to_f64(&self) -> f64 {
         self.numerator / self.denominator
     }

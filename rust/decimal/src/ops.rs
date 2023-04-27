@@ -35,6 +35,14 @@ impl std::ops::Add<NRNumber> for NRNumber {
     }
 }
 
+impl std::ops::Add<f64> for NRNumber {
+    type Output = Self;
+
+    fn add(self, rhs: f64) -> Self::Output {
+        self + NRNumber::from_f64(rhs)
+    }
+}
+
 impl std::ops::Neg for NRNumber {
     type Output = Self;
 
