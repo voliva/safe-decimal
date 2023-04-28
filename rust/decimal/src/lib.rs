@@ -4,6 +4,7 @@ use convert::from_f64;
 
 mod convert;
 mod double;
+mod format;
 mod iter_pad;
 mod ops;
 mod ord;

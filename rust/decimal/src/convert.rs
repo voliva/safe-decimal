@@ -43,14 +43,9 @@ fn from_f64_parts(integer_part: String, fractional_part: String) -> NRNumber {
     let inverted_fractional_part =
         1.0 / ("0.".to_owned() + &fractional_part).parse::<f64>().unwrap();
 
-    println!(
-        "1/{}.{} = {}",
-        integer_part, fractional_part, inverted_fractional_part
-    );
     let (inv_integer_part, inv_fractional_part) =
         get_integer_and_fraction(inverted_fractional_part);
 
-    // println!("{} => {}", fractional_part, inv_fractional_part);
     if inv_fractional_part.len() >= fractional_part.len() {
         // If it doesn't, then just return the value as it was.
         return from_parts(&integer_part, &fractional_part).unwrap();
@@ -64,7 +59,6 @@ fn from_f64_parts(integer_part: String, fractional_part: String) -> NRNumber {
     // Undoing the inversion - At this point all numbers are now represented as fractions, so it's safe to do these operations without losing precision.
     let parsed = integer_part_rational + inv_fractional_part_rational.inv().unwrap();
 
-    // println!("{}.{} => {:?}", integer_part, fractional_part, parsed);
     if is_negative {
         -parsed
     } else {
@@ -101,10 +95,16 @@ fn get_integer_and_fraction(value: f64) -> (String, String) {
 
 #[cfg(test)]
 mod tests {
+    use crate::format::to_decimal;
+
     use super::*;
 
     fn check_float_parsing(value: f64) {
         assert_eq!(from_f64(value).to_f64(), value);
+    }
+    fn check_num_den(value: NRNumber, num: f64, den: f64) {
+        assert_eq!(value.numerator, num);
+        assert_eq!(value.denominator, den);
     }
 
     #[test]
@@ -113,25 +113,24 @@ mod tests {
         check_float_parsing(-0.1);
         check_float_parsing(0.1);
         check_float_parsing(123456.1);
-        // check_float_parsing(0.123456789012345678);
+        check_float_parsing(0.1234567890123456);
+        assert_eq!(
+            to_decimal(from_f64(0.1234567890123456), 17),
+            "0.1234567890123456"
+        );
     }
 
     #[test]
     fn its_able_to_decode_simple_repeating_decimals() {
-        // TODO not sure why this works when commenting out the inverted hack.
-        assert_eq!(
+        check_num_den(
             from_f64(10.0 / 21.0), // 1/3 + 1/7
-            NRNumber {
-                numerator: 1.25,
-                denominator: 2.625
-            }
+            1.25,
+            2.625,
         );
-        assert_eq!(
+        check_num_den(
             from_f64(16.0 / 21.0), // 1/3 + 3/7
-            NRNumber {
-                numerator: 1.0,
-                denominator: 1.3125
-            }
+            1.0,
+            1.3125,
         );
     }
 }
