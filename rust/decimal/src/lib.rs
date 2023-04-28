@@ -1,6 +1,7 @@
 use std::{num::ParseIntError, str::FromStr};
 
 use convert::from_f64;
+use format::{to_decimal, FormatOptions};
 
 mod convert;
 mod double;
@@ -36,5 +37,9 @@ impl NRNumber {
 
     pub fn to_f64(&self) -> f64 {
         self.numerator / self.denominator
+    }
+
+    pub fn to_decimal(&self, options: FormatOptions) -> String {
+        to_decimal(self, &options)
     }
 }

@@ -95,7 +95,7 @@ fn get_integer_and_fraction(value: f64) -> (String, String) {
 
 #[cfg(test)]
 mod tests {
-    use crate::format::to_decimal;
+    use crate::format::FormatOptions;
 
     use super::*;
 
@@ -115,7 +115,7 @@ mod tests {
         check_float_parsing(123456.1);
         check_float_parsing(0.1234567890123456);
         assert_eq!(
-            to_decimal(from_f64(0.1234567890123456), 17),
+            from_f64(0.1234567890123456).to_decimal(FormatOptions::default()),
             "0.1234567890123456"
         );
     }
