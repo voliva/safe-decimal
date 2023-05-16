@@ -31,8 +31,8 @@ impl<T: Float + std::fmt::Debug> FromStr for NRNumber<T> {
     }
 }
 
-impl<T: Float + LowerExp + std::fmt::Debug> NRNumber<T> {
-    pub fn from_float(value: T) -> NRNumber<T> {
+impl<T: Float + LowerExp + std::fmt::Debug> From<T> for NRNumber<T> {
+    fn from(value: T) -> Self {
         from_f64(value)
     }
 }

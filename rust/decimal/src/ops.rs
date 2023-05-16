@@ -43,7 +43,7 @@ impl<T: Float + LowerExp + std::fmt::Debug> std::ops::Add<T> for NRNumber<T> {
     type Output = Self;
 
     fn add(self, rhs: T) -> Self::Output {
-        self + NRNumber::from_float(rhs)
+        self + NRNumber::from(rhs)
     }
 }
 
