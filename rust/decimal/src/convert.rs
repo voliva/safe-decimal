@@ -1,5 +1,9 @@
+use std::fmt::LowerExp;
+
+use num_traits::Float;
+
 use crate::{
-    parsing::{from_integer, from_parts},
+    parsing::{from_integer, from_parts as from_str_parts},
     NRNumber,
 };
 
@@ -17,7 +21,7 @@ impl PadEnd for String {
     }
 }
 
-pub fn from_f64(value: f64) -> NRNumber {
+pub fn from_f64<T: Float + LowerExp + std::fmt::Debug>(value: T) -> NRNumber<T> {
     /*
      * When we receive a `0.1` if we try to get the maximum precision we will actually get the
      * "bad" representation of the number `0.1 => 0.1000000000000000055511151231257827021181583404541015625`.
@@ -31,12 +35,15 @@ pub fn from_f64(value: f64) -> NRNumber {
      * with the string representation.
      */
     let (integer_part, fractional_part) = get_integer_and_fraction(value);
-    from_f64_parts(integer_part, fractional_part)
+    from_parts(integer_part, fractional_part)
 }
 
-fn from_f64_parts(integer_part: String, fractional_part: String) -> NRNumber {
+fn from_parts<T: Float + std::fmt::Debug>(
+    integer_part: String,
+    fractional_part: String,
+) -> NRNumber<T> {
     if fractional_part.len() == 0 {
-        return from_parts(&integer_part, "").unwrap();
+        return from_str_parts(&integer_part, "").unwrap();
     }
 
     // Check if inverting the fractional part gets rid of extra decimals.
@@ -48,13 +55,13 @@ fn from_f64_parts(integer_part: String, fractional_part: String) -> NRNumber {
 
     if inv_fractional_part.len() >= fractional_part.len() {
         // If it doesn't, then just return the value as it was.
-        return from_parts(&integer_part, &fractional_part).unwrap();
+        return from_str_parts(&integer_part, &fractional_part).unwrap();
     }
 
     // We have to ignore the negative symbol and add it at the end, because we're separating the integer from the fraction.
     let is_negative = integer_part.starts_with("-");
     let integer_part_rational = from_integer(&integer_part).unwrap().abs();
-    let inv_fractional_part_rational = from_f64_parts(inv_integer_part, inv_fractional_part);
+    let inv_fractional_part_rational = from_parts(inv_integer_part, inv_fractional_part);
 
     // Undoing the inversion - At this point all numbers are now represented as fractions, so it's safe to do these operations without losing precision.
     let parsed = integer_part_rational + inv_fractional_part_rational.inv().unwrap();
@@ -66,7 +73,7 @@ fn from_f64_parts(integer_part: String, fractional_part: String) -> NRNumber {
     }
 }
 
-fn get_integer_and_fraction(value: f64) -> (String, String) {
+fn get_integer_and_fraction<T: Float + LowerExp>(value: T) -> (String, String) {
     let exp_repr = format!("{:e}", value);
     let split: Vec<&str> = exp_repr.splitn(2, "e").collect();
     let (numeric, exponent) = (split[0], split[1]);
@@ -99,10 +106,10 @@ mod tests {
 
     use super::*;
 
-    fn check_float_parsing(value: f64) {
-        assert_eq!(from_f64(value).to_f64(), value);
+    fn check_float_parsing(value: impl Float + LowerExp + std::fmt::Debug) {
+        assert_eq!(from_f64(value).to_float(), value);
     }
-    fn check_num_den(value: NRNumber, num: f64, den: f64) {
+    fn check_num_den<T: Float + std::fmt::Debug>(value: NRNumber<T>, num: T, den: T) {
         assert_eq!(value.numerator, num);
         assert_eq!(value.denominator, den);
     }

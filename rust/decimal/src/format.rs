@@ -1,5 +1,7 @@
 use std::cmp::Ordering;
 
+use num_traits::Float;
+
 use crate::NRNumber;
 
 #[derive(Debug, Clone, Copy)]
@@ -118,37 +120,43 @@ impl FormatOptions {
     }
 }
 
-pub fn to_decimal(value: &NRNumber, options: &FormatOptions) -> String {
-    let sign = if value.numerator < 0.0 { "-" } else { "" };
+pub fn to_decimal<T: Float + PartialOrd>(value: &NRNumber<T>, options: &FormatOptions) -> String {
+    let sign = if value.numerator < num_traits::zero() {
+        "-"
+    } else {
+        ""
+    };
     let mut numerator = value.numerator.abs();
     let denominator = value.denominator;
 
-    let mut integer_part = (numerator / denominator).trunc() as u64;
+    let mut integer_part = (numerator / denominator).trunc().to_u64().unwrap();
 
     // numerator and denominator are both safe.
     // multiplying an integer by a safe number gives a safe number.
     // subtracting two safe numbers also gives a safe number.
-    numerator -= (integer_part as f64) * denominator;
+    numerator = numerator - T::from(integer_part).unwrap() * denominator;
 
     let mut decimal_part = Vec::with_capacity(options.max_decimals);
     for _ in 0..options.max_decimals {
-        if numerator == 0.0 {
+        if numerator == num_traits::zero() {
             break;
         }
 
         // Multiply a/b by radix, extract integer, repeat.
-        numerator = numerator * 10.0;
+        numerator = numerator * T::from(10).unwrap();
         let div_result = (numerator / denominator).trunc();
-        decimal_part.push(div_result as u8);
+        decimal_part.push(div_result.to_u8().unwrap());
 
-        numerator -= div_result * denominator;
+        numerator = numerator - div_result * denominator;
     }
 
-    if numerator != 0.0 {
+    if numerator != num_traits::zero() {
         let is_negative = sign == "-";
         let is_odd = options.max_decimals == 0 && integer_part % 2 == 1
             || decimal_part[decimal_part.len() - 1] % 2 == 1;
-        let half_cmp = (2.0 * numerator).total_cmp(&denominator);
+        let half_cmp = (T::from(2).unwrap() * numerator)
+            .partial_cmp(&denominator)
+            .unwrap_or(Ordering::Equal);
 
         if options
             .rounding

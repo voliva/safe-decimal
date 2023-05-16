@@ -1,13 +1,14 @@
+use num_traits::float::Float;
 use std::num::ParseIntError;
 
-use crate::{double::construct_double, iter_pad::PadTrait, ops::simplify, NRNumber};
+use crate::{double::construct_float, iter_pad::PadTrait, ops::simplify, NRNumber};
 
-pub fn from_integer(integer: &str) -> Result<NRNumber, ParseIntError> {
+pub fn from_integer<T: Float>(integer: &str) -> Result<NRNumber<T>, ParseIntError> {
     let (is_negative, _, integer_numerator) = extract_prefix(integer)?;
 
     let parsed = NRNumber {
-        numerator: integer_numerator as f64,
-        denominator: 1.0,
+        numerator: T::from(integer_numerator).unwrap(),
+        denominator: T::from(1).unwrap(),
     };
     if is_negative {
         return Ok(-parsed);
@@ -15,11 +16,14 @@ pub fn from_integer(integer: &str) -> Result<NRNumber, ParseIntError> {
     return Ok(parsed);
 }
 
-pub fn from_parts(integer_part: &str, fractional_part: &str) -> Result<NRNumber, ParseIntError> {
+pub fn from_parts<T: Float + std::fmt::Debug>(
+    integer_part: &str,
+    fractional_part: &str,
+) -> Result<NRNumber<T>, ParseIntError> {
     let (is_negative, radix, integer_numerator) = extract_prefix(integer_part)?;
     let integer_part_rational = NRNumber {
-        numerator: integer_numerator as f64,
-        denominator: 1.0,
+        numerator: T::from(integer_numerator).unwrap(),
+        denominator: T::from(1).unwrap(),
     };
 
     let fractional_part_rational = match radix {
@@ -37,31 +41,35 @@ pub fn from_parts(integer_part: &str, fractional_part: &str) -> Result<NRNumber,
     return Ok(parsed);
 }
 
-pub fn fractional_part_10(fractional_part: &str) -> Result<NRNumber, ParseIntError> {
+pub fn fractional_part_10<T: Float>(fractional_part: &str) -> Result<NRNumber<T>, ParseIntError> {
     let len = fractional_part.len().min(22);
     if len == 0 {
         return Ok(NRNumber {
-            numerator: 0.0,
-            denominator: 1.0,
+            numerator: T::zero(),
+            denominator: T::one(),
         });
     }
     let fractional_part = &fractional_part[0..len];
-    let denominator = (5.0_f64).powf(fractional_part.len() as f64);
+    let denominator = T::from(5)
+        .unwrap()
+        .powf(T::from(fractional_part.len()).unwrap());
 
-    let correction = (2.0_f64).powf(fractional_part.len() as f64);
-    let numerator = u128::from_str_radix(fractional_part, 10)? as f64 / correction;
+    let correction = T::from(2)
+        .unwrap()
+        .powf(T::from(fractional_part.len()).unwrap());
+    let numerator = T::from(u128::from_str_radix(fractional_part, 10)?).unwrap() / correction;
     Ok(NRNumber {
         numerator,
         denominator,
     })
 }
 
-pub fn fractional_part_2(fractional_part: &str) -> Result<NRNumber, ParseIntError> {
+pub fn fractional_part_2<T: Float>(fractional_part: &str) -> Result<NRNumber<T>, ParseIntError> {
     let first_one = fractional_part.find('1');
     if first_one.is_none() {
         return Ok(NRNumber {
-            numerator: 0.0,
-            denominator: 1.0,
+            numerator: num_traits::zero(),
+            denominator: num_traits::one(),
         });
     }
 
@@ -77,10 +85,13 @@ pub fn fractional_part_2(fractional_part: &str) -> Result<NRNumber, ParseIntErro
         .pad(52, 0)
         .fold(0_u64, |acc, x| acc << 1 | x);
 
-    Ok(simplify(construct_double(0, exponent, mantissa), 1.0))
+    Ok(simplify(
+        construct_float::<T>(0, exponent, mantissa),
+        T::one(),
+    ))
 }
 
-pub fn fractional_part_8(fractional_part: &str) -> Result<NRNumber, ParseIntError> {
+pub fn fractional_part_8<T: Float>(fractional_part: &str) -> Result<NRNumber<T>, ParseIntError> {
     let binary_rep = fractional_part
         .chars()
         .map(|c| match c {
@@ -99,7 +110,7 @@ pub fn fractional_part_8(fractional_part: &str) -> Result<NRNumber, ParseIntErro
     fractional_part_2(&binary_rep)
 }
 
-pub fn fractional_part_16(fractional_part: &str) -> Result<NRNumber, ParseIntError> {
+pub fn fractional_part_16<T: Float>(fractional_part: &str) -> Result<NRNumber<T>, ParseIntError> {
     let binary_rep = fractional_part
         .chars()
         .map(|c| match c.to_ascii_lowercase() {
@@ -145,8 +156,11 @@ fn extract_prefix(value: &str) -> Result<(bool, u32, u128), ParseIntError> {
 mod tests {
     use super::*;
 
-    fn check_parsing(integer: &str, fraction: &str, output: f64) {
-        assert_eq!(from_parts(integer, fraction).unwrap().to_f64(), output);
+    fn check_parsing<T: Float + std::fmt::Debug>(integer: &str, fraction: &str, output: T) {
+        assert_eq!(
+            from_parts::<T>(integer, fraction).unwrap().to_float(),
+            output
+        );
     }
 
     #[test]

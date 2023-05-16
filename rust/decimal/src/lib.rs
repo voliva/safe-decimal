@@ -1,7 +1,8 @@
-use std::{num::ParseIntError, str::FromStr};
+use std::{fmt::LowerExp, num::ParseIntError, str::FromStr};
 
 use convert::from_f64;
 use format::{to_decimal, FormatOptions};
+use num_traits::Float;
 
 mod convert;
 mod double;
@@ -12,12 +13,12 @@ mod ord;
 mod parsing;
 
 #[derive(Debug, Clone, Copy)]
-pub struct NRNumber {
-    numerator: f64,
-    denominator: f64,
+pub struct NRNumber<T> {
+    numerator: T,
+    denominator: T,
 }
 
-impl FromStr for NRNumber {
+impl<T: Float + std::fmt::Debug> FromStr for NRNumber<T> {
     type Err = ParseIntError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -30,12 +31,14 @@ impl FromStr for NRNumber {
     }
 }
 
-impl NRNumber {
-    pub fn from_f64(value: f64) -> NRNumber {
+impl<T: Float + LowerExp + std::fmt::Debug> NRNumber<T> {
+    pub fn from_float(value: T) -> NRNumber<T> {
         from_f64(value)
     }
+}
 
-    pub fn to_f64(&self) -> f64 {
+impl<T: Float> NRNumber<T> {
+    pub fn to_float(&self) -> T {
         self.numerator / self.denominator
     }
 
