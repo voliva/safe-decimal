@@ -1,7 +1,8 @@
 use std::{fmt::LowerExp, num::ParseIntError, str::FromStr};
 
 use convert::from_f64;
-use format::{to_decimal, FormatOptions};
+use format::to_decimal;
+pub use format::FormatOptions;
 use num_traits::Float;
 
 mod convert;
