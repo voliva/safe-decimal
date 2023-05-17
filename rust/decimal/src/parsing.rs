@@ -1,7 +1,7 @@
 use num_traits::float::Float;
 use std::num::ParseIntError;
 
-use crate::{double::construct_float, iter_pad::PadTrait, ops::simplify, NRNumber};
+use crate::{double::construct_float, iter_pad::PadTrait, NRNumber};
 
 pub fn from_integer<T: Float>(integer: &str) -> Result<NRNumber<T>, ParseIntError> {
     let (is_negative, _, integer_numerator) = extract_prefix(integer)?;
@@ -85,10 +85,10 @@ pub fn fractional_part_2<T: Float>(fractional_part: &str) -> Result<NRNumber<T>,
         .pad(52, 0)
         .fold(0_u64, |acc, x| acc << 1 | x);
 
-    Ok(simplify(
-        construct_float::<T>(0, exponent, mantissa),
-        T::one(),
-    ))
+    Ok(NRNumber {
+        numerator: construct_float::<T>(0, exponent, mantissa),
+        denominator: T::one(),
+    })
 }
 
 pub fn fractional_part_8<T: Float>(fractional_part: &str) -> Result<NRNumber<T>, ParseIntError> {

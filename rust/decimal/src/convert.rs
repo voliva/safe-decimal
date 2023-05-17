@@ -61,7 +61,8 @@ fn from_parts<T: Float + std::fmt::Debug>(
     // We have to ignore the negative symbol and add it at the end, because we're separating the integer from the fraction.
     let is_negative = integer_part.starts_with("-");
     let integer_part_rational = from_integer(&integer_part).unwrap().abs();
-    let inv_fractional_part_rational = from_parts(inv_integer_part, inv_fractional_part);
+    let inv_fractional_part_rational =
+        from_parts(inv_integer_part.clone(), inv_fractional_part.clone());
 
     // Undoing the inversion - At this point all numbers are now represented as fractions, so it's safe to do these operations without losing precision.
     let parsed = integer_part_rational + inv_fractional_part_rational.inv().unwrap();
