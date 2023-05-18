@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use num_traits::Float;
 
-use crate::NRNumber;
+use crate::SafeDecimal;
 
 #[derive(Debug, Clone, Copy)]
 enum RoundingDirection {
@@ -120,7 +120,10 @@ impl FormatOptions {
     }
 }
 
-pub fn to_decimal<T: Float + PartialOrd>(value: &NRNumber<T>, options: &FormatOptions) -> String {
+pub fn to_decimal<T: Float + PartialOrd>(
+    value: &SafeDecimal<T>,
+    options: &FormatOptions,
+) -> String {
     let sign = if value.numerator < num_traits::zero() {
         "-"
     } else {

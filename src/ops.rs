@@ -4,21 +4,21 @@ use num_traits::Float;
 
 use crate::{
     double::{exponential_form, from_exponential_from},
-    NRNumber,
+    SafeDecimal,
 };
 
-impl<T: Float> NRNumber<T> {
-    pub fn inv(&self) -> Option<NRNumber<T>> {
+impl<T: Float> SafeDecimal<T> {
+    pub fn inv(&self) -> Option<SafeDecimal<T>> {
         if self.numerator == num_traits::zero() {
             None
         } else {
             if self.numerator.is_sign_negative() {
-                Some(NRNumber {
+                Some(SafeDecimal {
                     numerator: -self.denominator,
                     denominator: -self.numerator,
                 })
             } else {
-                Some(NRNumber {
+                Some(SafeDecimal {
                     numerator: self.denominator,
                     denominator: self.numerator,
                 })
@@ -26,7 +26,7 @@ impl<T: Float> NRNumber<T> {
         }
     }
 
-    pub fn abs(self) -> NRNumber<T> {
+    pub fn abs(self) -> SafeDecimal<T> {
         if self.numerator.is_sign_negative() {
             -self
         } else {
@@ -35,10 +35,10 @@ impl<T: Float> NRNumber<T> {
     }
 }
 
-impl<T: Float> std::ops::Add<NRNumber<T>> for NRNumber<T> {
+impl<T: Float> std::ops::Add<SafeDecimal<T>> for SafeDecimal<T> {
     type Output = Self;
 
-    fn add(self, rhs: NRNumber<T>) -> Self::Output {
+    fn add(self, rhs: SafeDecimal<T>) -> Self::Output {
         let (a, b) = simplify_factors(self.denominator, rhs.denominator);
         // With the precondition that both denominators are positive, a and b will be positive as well.
 
@@ -50,33 +50,33 @@ impl<T: Float> std::ops::Add<NRNumber<T>> for NRNumber<T> {
         let denominator = self.denominator * b;
 
         // Then the numerator we also just need to cross that.
-        NRNumber {
+        SafeDecimal {
             numerator: self.numerator * b + rhs.numerator * a,
             denominator,
         }
     }
 }
 
-impl<T: Float + LowerExp + std::fmt::Debug> std::ops::Add<T> for NRNumber<T> {
+impl<T: Float + LowerExp + std::fmt::Debug> std::ops::Add<T> for SafeDecimal<T> {
     type Output = Self;
 
     fn add(self, rhs: T) -> Self::Output {
-        self + NRNumber::from(rhs)
+        self + SafeDecimal::from(rhs)
     }
 }
 
-impl<T: Float> std::ops::Neg for NRNumber<T> {
+impl<T: Float> std::ops::Neg for SafeDecimal<T> {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        return NRNumber {
+        return SafeDecimal {
             numerator: -self.numerator,
             denominator: self.denominator,
         };
     }
 }
 
-impl<T: Float> std::ops::Sub for NRNumber<T> {
+impl<T: Float> std::ops::Sub for SafeDecimal<T> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -84,7 +84,7 @@ impl<T: Float> std::ops::Sub for NRNumber<T> {
     }
 }
 
-impl<T: Float> std::ops::Mul for NRNumber<T> {
+impl<T: Float> std::ops::Mul for SafeDecimal<T> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -96,14 +96,14 @@ impl<T: Float> std::ops::Mul for NRNumber<T> {
 
         let (self_num, rhs_den) = simplify_factors(self.numerator, rhs.denominator);
         let (rhs_num, self_den) = simplify_factors(rhs.numerator, self.denominator);
-        NRNumber {
+        SafeDecimal {
             numerator: self_num * rhs_num,
             denominator: self_den * rhs_den,
         }
     }
 }
 
-impl<T: Float> std::ops::Div for NRNumber<T> {
+impl<T: Float> std::ops::Div for SafeDecimal<T> {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {

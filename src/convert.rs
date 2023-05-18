@@ -4,7 +4,7 @@ use num_traits::Float;
 
 use crate::{
     parsing::{from_integer, from_parts as from_str_parts},
-    NRNumber,
+    SafeDecimal,
 };
 
 trait PadEnd {
@@ -21,7 +21,7 @@ impl PadEnd for String {
     }
 }
 
-pub fn from_f64<T: Float + LowerExp + std::fmt::Debug>(value: T) -> NRNumber<T> {
+pub fn from_f64<T: Float + LowerExp + std::fmt::Debug>(value: T) -> SafeDecimal<T> {
     /*
      * When we receive a `0.1` if we try to get the maximum precision we will actually get the
      * "bad" representation of the number `0.1 => 0.1000000000000000055511151231257827021181583404541015625`.
@@ -41,7 +41,7 @@ pub fn from_f64<T: Float + LowerExp + std::fmt::Debug>(value: T) -> NRNumber<T> 
 fn from_parts<T: Float + std::fmt::Debug>(
     integer_part: String,
     fractional_part: String,
-) -> NRNumber<T> {
+) -> SafeDecimal<T> {
     if fractional_part.len() == 0 {
         return from_str_parts(&integer_part, "").unwrap();
     }
@@ -110,7 +110,7 @@ mod tests {
     fn check_float_parsing(value: impl Float + LowerExp + std::fmt::Debug) {
         assert_eq!(from_f64(value).to_float(), value);
     }
-    fn check_num_den<T: Float + std::fmt::Debug>(value: NRNumber<T>, num: T, den: T) {
+    fn check_num_den<T: Float + std::fmt::Debug>(value: SafeDecimal<T>, num: T, den: T) {
         assert_eq!(value.numerator, num);
         assert_eq!(value.denominator, den);
     }
@@ -132,13 +132,13 @@ mod tests {
     fn its_able_to_decode_simple_repeating_decimals() {
         check_num_den(
             from_f64(10.0 / 21.0), // 1/3 + 1/7
-            1.25,
-            2.625,
+            10.0,
+            21.0,
         );
         check_num_den(
             from_f64(16.0 / 21.0), // 1/3 + 3/7
-            1.0,
-            1.3125,
+            8.0,
+            10.5,
         );
     }
 }

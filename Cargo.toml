@@ -1,9 +1,11 @@
 [package]
-name = "decimal"
+name = "safe_decimal"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+num-traits = "0.2.15"
+
+[dev-dependencies]
 bigdecimal = "0.3.1"
 num-rational = "0.4.1"
-num-traits = "0.2.15"

@@ -14,12 +14,12 @@ mod ord;
 mod parsing;
 
 #[derive(Debug, Clone, Copy)]
-pub struct NRNumber<T> {
+pub struct SafeDecimal<T> {
     numerator: T,
     denominator: T,
 }
 
-impl<T: Float + std::fmt::Debug> FromStr for NRNumber<T> {
+impl<T: Float + std::fmt::Debug> FromStr for SafeDecimal<T> {
     type Err = ParseIntError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -32,13 +32,13 @@ impl<T: Float + std::fmt::Debug> FromStr for NRNumber<T> {
     }
 }
 
-impl<T: Float + LowerExp + std::fmt::Debug> From<T> for NRNumber<T> {
+impl<T: Float + LowerExp + std::fmt::Debug> From<T> for SafeDecimal<T> {
     fn from(value: T) -> Self {
         from_f64(value)
     }
 }
 
-impl<T: Float> NRNumber<T> {
+impl<T: Float> SafeDecimal<T> {
     pub fn to_float(&self) -> T {
         self.numerator / self.denominator
     }

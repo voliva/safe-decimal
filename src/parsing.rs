@@ -1,12 +1,12 @@
 use num_traits::float::Float;
 use std::num::ParseIntError;
 
-use crate::{double::construct_float, iter_pad::PadTrait, NRNumber};
+use crate::{double::construct_float, iter_pad::PadTrait, SafeDecimal};
 
-pub fn from_integer<T: Float>(integer: &str) -> Result<NRNumber<T>, ParseIntError> {
+pub fn from_integer<T: Float>(integer: &str) -> Result<SafeDecimal<T>, ParseIntError> {
     let (is_negative, _, integer_numerator) = extract_prefix(integer)?;
 
-    let parsed = NRNumber {
+    let parsed = SafeDecimal {
         numerator: T::from(integer_numerator).unwrap(),
         denominator: T::from(1).unwrap(),
     };
@@ -19,9 +19,9 @@ pub fn from_integer<T: Float>(integer: &str) -> Result<NRNumber<T>, ParseIntErro
 pub fn from_parts<T: Float + std::fmt::Debug>(
     integer_part: &str,
     fractional_part: &str,
-) -> Result<NRNumber<T>, ParseIntError> {
+) -> Result<SafeDecimal<T>, ParseIntError> {
     let (is_negative, radix, integer_numerator) = extract_prefix(integer_part)?;
-    let integer_part_rational = NRNumber {
+    let integer_part_rational = SafeDecimal {
         numerator: T::from(integer_numerator).unwrap(),
         denominator: T::from(1).unwrap(),
     };
@@ -41,10 +41,12 @@ pub fn from_parts<T: Float + std::fmt::Debug>(
     return Ok(parsed);
 }
 
-pub fn fractional_part_10<T: Float>(fractional_part: &str) -> Result<NRNumber<T>, ParseIntError> {
+pub fn fractional_part_10<T: Float>(
+    fractional_part: &str,
+) -> Result<SafeDecimal<T>, ParseIntError> {
     let len = fractional_part.len().min(22);
     if len == 0 {
-        return Ok(NRNumber {
+        return Ok(SafeDecimal {
             numerator: T::zero(),
             denominator: T::one(),
         });
@@ -58,16 +60,16 @@ pub fn fractional_part_10<T: Float>(fractional_part: &str) -> Result<NRNumber<T>
         .unwrap()
         .powf(T::from(fractional_part.len()).unwrap());
     let numerator = T::from(u128::from_str_radix(fractional_part, 10)?).unwrap() / correction;
-    Ok(NRNumber {
+    Ok(SafeDecimal {
         numerator,
         denominator,
     })
 }
 
-pub fn fractional_part_2<T: Float>(fractional_part: &str) -> Result<NRNumber<T>, ParseIntError> {
+pub fn fractional_part_2<T: Float>(fractional_part: &str) -> Result<SafeDecimal<T>, ParseIntError> {
     let first_one = fractional_part.find('1');
     if first_one.is_none() {
-        return Ok(NRNumber {
+        return Ok(SafeDecimal {
             numerator: num_traits::zero(),
             denominator: num_traits::one(),
         });
@@ -85,13 +87,13 @@ pub fn fractional_part_2<T: Float>(fractional_part: &str) -> Result<NRNumber<T>,
         .pad(52, 0)
         .fold(0_u64, |acc, x| acc << 1 | x);
 
-    Ok(NRNumber {
+    Ok(SafeDecimal {
         numerator: construct_float::<T>(0, exponent, mantissa),
         denominator: T::one(),
     })
 }
 
-pub fn fractional_part_8<T: Float>(fractional_part: &str) -> Result<NRNumber<T>, ParseIntError> {
+pub fn fractional_part_8<T: Float>(fractional_part: &str) -> Result<SafeDecimal<T>, ParseIntError> {
     let binary_rep = fractional_part
         .chars()
         .map(|c| match c {
@@ -110,7 +112,9 @@ pub fn fractional_part_8<T: Float>(fractional_part: &str) -> Result<NRNumber<T>,
     fractional_part_2(&binary_rep)
 }
 
-pub fn fractional_part_16<T: Float>(fractional_part: &str) -> Result<NRNumber<T>, ParseIntError> {
+pub fn fractional_part_16<T: Float>(
+    fractional_part: &str,
+) -> Result<SafeDecimal<T>, ParseIntError> {
     let binary_rep = fractional_part
         .chars()
         .map(|c| match c.to_ascii_lowercase() {
@@ -201,7 +205,7 @@ mod tests {
         //   const numberStr =
         //     "0." + new Array(16).fill("12345678901234567890").join("");
         //   expect(
-        //     new NRNumber(numberStr).toDecimalString().startsWith("0.1234567890123456")
+        //     new SafeDecimal(numberStr).toDecimalString().startsWith("0.1234567890123456")
         //   ).toBe(true);
     }
 }

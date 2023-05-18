@@ -103,10 +103,10 @@ In the case of the previous example of 3.35, without the constraint of integers,
 As another example, let's do the operation `0.3333…/0.1`, and see what inner values does the library have:
 
 ```ts
-const aThird = new NRNumber(1).div(3); // or new NRNumber({n: 1, d: 3})
+const aThird = new SafeDecimal(1).div(3); // or new SafeDecimal({n: 1, d: 3})
 console.log(aThird); // { n: 1, d: 3 }
 
-const zeroOne = new NRNumber("0.1");
+const zeroOne = new SafeDecimal("0.1");
 console.log(zeroOne); // { n: 0.5, d: 5 }
 
 const division = aThird.div(zeroOne);

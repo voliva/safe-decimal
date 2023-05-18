@@ -1,7 +1,7 @@
 use bigdecimal::BigDecimal;
-use decimal::{FormatOptions, NRNumber};
 use num_rational::Rational64;
 use num_traits::{FromPrimitive, ToPrimitive};
+use safe_decimal::{FormatOptions, SafeDecimal};
 use std::{str::FromStr, time::SystemTime};
 
 #[test]
@@ -9,25 +9,25 @@ fn it_compares_to_bigdecimal() {
     // https://github.com/MikeMcl/bignumber.js/issues/80
     // 0.6, 0.7, 0.9
 
-    let value = NRNumber::from(0.6).inv().unwrap().inv().unwrap();
+    let value = SafeDecimal::from(0.6).inv().unwrap().inv().unwrap();
     println!("{}", value.to_decimal(FormatOptions::default()));
     let value = BigDecimal::from_str("0.6").unwrap().inverse().inverse();
     println!("{}", value.to_string());
 
-    let value = NRNumber::from(0.7).inv().unwrap().inv().unwrap();
+    let value = SafeDecimal::from(0.7).inv().unwrap().inv().unwrap();
     println!("{}", value.to_decimal(FormatOptions::default()));
     let value = BigDecimal::from_str("0.7").unwrap().inverse().inverse();
     println!("{}", value.to_string());
 
-    let value = NRNumber::from(0.9).inv().unwrap().inv().unwrap();
+    let value = SafeDecimal::from(0.9).inv().unwrap().inv().unwrap();
     println!("{}", value.to_decimal(FormatOptions::default()));
     let value = BigDecimal::from_str("0.9").unwrap().inverse().inverse();
     println!("{}", value.to_string());
 
     // Performance
     let start = SystemTime::now();
-    let mut value = NRNumber::from(0.1);
-    let multiplier = NRNumber::from(1.001);
+    let mut value = SafeDecimal::from(0.1);
+    let multiplier = SafeDecimal::from(1.001);
     println!("{:?} {:?}", value, multiplier);
 
     for _ in 0..10000 {
@@ -55,15 +55,15 @@ fn it_compares_to_bigdecimal() {
         SystemTime::now().duration_since(start).unwrap().as_micros()
     );
 
-    println!("{:?}", NRNumber::from(3.35));
+    println!("{:?}", SafeDecimal::from(3.35));
 }
 
 #[test]
 fn it_compares_to_rational() {
     // Performance
     let start = SystemTime::now();
-    let mut value = NRNumber::from(0.1);
-    let multiplier = NRNumber::from(1.001);
+    let mut value = SafeDecimal::from(0.1);
+    let multiplier = SafeDecimal::from(1.001);
     println!("{:?} {:?}", value, multiplier);
 
     for _ in 0..10 {
@@ -94,8 +94,8 @@ fn it_compares_to_rational() {
 
     // Addition
     let start = SystemTime::now();
-    let mut value = NRNumber::from(0.1);
-    let multiplier = NRNumber::from(1.001);
+    let mut value = SafeDecimal::from(0.1);
+    let multiplier = SafeDecimal::from(1.001);
     println!("{:?} {:?}", value, multiplier);
 
     for _ in 0..1000000 {
