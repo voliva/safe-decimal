@@ -15,8 +15,8 @@ mod parsing;
 
 #[derive(Debug, Clone, Copy)]
 pub struct SafeDecimal<T> {
-    numerator: T,
-    denominator: T,
+    pub numerator: T,
+    pub denominator: T,
 }
 
 impl<T: Float + std::fmt::Debug> FromStr for SafeDecimal<T> {
