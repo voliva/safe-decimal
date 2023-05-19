@@ -1,41 +1,38 @@
 use bigdecimal::BigDecimal;
 use num_rational::Rational64;
 use num_traits::{FromPrimitive, ToPrimitive};
-use safe_decimal::{FormatOptions, SafeDecimal};
+use safe_decimal::SafeDecimal;
 use std::{str::FromStr, time::SystemTime};
 
 #[test]
 fn it_compares_to_bigdecimal() {
-    // https://github.com/MikeMcl/bignumber.js/issues/80
-    // 0.6, 0.7, 0.9
-
     let value = SafeDecimal::from(0.6).inv().unwrap().inv().unwrap();
-    println!("{}", value.to_decimal(FormatOptions::default()));
+    println!("SafeDecimal {}", value.to_string());
     let value = BigDecimal::from_str("0.6").unwrap().inverse().inverse();
-    println!("{}", value.to_string());
+    println!("BigDecimal {}", value.to_string());
 
     let value = SafeDecimal::from(0.7).inv().unwrap().inv().unwrap();
-    println!("{}", value.to_decimal(FormatOptions::default()));
+    println!("SafeDecimal {}", value.to_string());
     let value = BigDecimal::from_str("0.7").unwrap().inverse().inverse();
-    println!("{}", value.to_string());
+    println!("BigDecimal {}", value.to_string());
 
     let value = SafeDecimal::from(0.9).inv().unwrap().inv().unwrap();
-    println!("{}", value.to_decimal(FormatOptions::default()));
+    println!("SafeDecimal {}", value.to_string());
     let value = BigDecimal::from_str("0.9").unwrap().inverse().inverse();
-    println!("{}", value.to_string());
+    println!("BigDecimal {}", value.to_string());
 
     // Performance
+    println!("\nPerformance multiplication");
     let start = SystemTime::now();
     let mut value = SafeDecimal::from(0.1);
     let multiplier = SafeDecimal::from(1.001);
-    println!("{:?} {:?}", value, multiplier);
 
     for _ in 0..10000 {
         value = value * multiplier;
     }
 
     println!(
-        "Result a: {}, time: {}us",
+        "SafeDecimal: {}, time: {}us",
         value.to_float(),
         SystemTime::now().duration_since(start).unwrap().as_micros()
     );
@@ -46,32 +43,89 @@ fn it_compares_to_bigdecimal() {
     let multiplier = BigDecimal::from_str("1.001").unwrap();
 
     for _ in 0..10000 {
-        value = value * multiplier.clone()
+        value = value.clone() * multiplier.clone();
     }
 
     println!(
-        "Result b: {}, time: {}us",
-        "-", // value.to_string(),
+        "BigDecimal {}, time: {}us",
+        value.to_f64().unwrap(),
+        SystemTime::now().duration_since(start).unwrap().as_micros()
+    );
+    println!("{}, {}", value.to_string().len(), &value.to_string()[0..30]);
+
+    println!("\nPerformance addition");
+    let start = SystemTime::now();
+    let mut value = SafeDecimal::from(0.1);
+    let increment = SafeDecimal::from(1.001);
+
+    for _ in 0..1000000 {
+        value = value + increment;
+    }
+
+    println!(
+        "SafeDecimal: {}, time: {}us",
+        value.to_float(),
         SystemTime::now().duration_since(start).unwrap().as_micros()
     );
 
-    println!("{:?}", SafeDecimal::from(3.35));
+    let start = SystemTime::now();
+
+    let mut value = BigDecimal::from_str("0.1").unwrap();
+    let increment = BigDecimal::from_str("1.001").unwrap();
+
+    // It breaks down after just 6 multiplications...
+    for _ in 0..1000000 {
+        value = value + increment.clone();
+    }
+
+    println!(
+        "BigDecimal: {}, time: {}us",
+        value.to_f64().unwrap(),
+        SystemTime::now().duration_since(start).unwrap().as_micros()
+    )
 }
 
 #[test]
 fn it_compares_to_rational() {
-    // Performance
+    println!("Overflow limit");
+    let mut value: SafeDecimal<f64> = SafeDecimal::from(0.1);
+    let mut increment = SafeDecimal::from(1.0);
+    let factor = SafeDecimal::from(1.5);
+
+    for _ in 0..37 {
+        value = value + increment;
+        increment = increment / factor;
+        // Interesting: increment gets to zero
+        // if i > 3510 {
+        //     println!("SafeDecimal: {i} {:?} {:?}", value, increment);
+        // }
+    }
+
+    println!("SafeDecimal: {}", value.to_float());
+
+    let mut value = Rational64::from_f64(0.1).unwrap();
+    let mut increment = Rational64::from_f64(1.0).unwrap();
+    let factor = Rational64::from_f64(1.5).unwrap();
+
+    for _ in 0..37 {
+        // Blows up if 38
+        value = value + increment;
+        increment = increment / factor;
+    }
+
+    println!("Rational: {}", value.to_f64().unwrap());
+
+    println!("\nPerformance multiplication");
     let start = SystemTime::now();
     let mut value = SafeDecimal::from(0.1);
     let multiplier = SafeDecimal::from(1.001);
-    println!("{:?} {:?}", value, multiplier);
 
-    for _ in 0..10 {
+    for _ in 0..5 {
         value = value * multiplier;
     }
 
     println!(
-        "Result a: {}, time: {}us",
+        "SafeDecimal: {}, time: {}us",
         value.to_float(),
         SystemTime::now().duration_since(start).unwrap().as_micros()
     );
@@ -82,28 +136,27 @@ fn it_compares_to_rational() {
     let multiplier = Rational64::from_f64(1.001).unwrap();
 
     // It breaks down after just 6 multiplications...
-    for _ in 0..10 {
+    for _ in 0..5 {
         value = value * multiplier;
     }
 
     println!(
-        "Result b: {}, time: {}us",
+        "Rational: {}, time: {}us",
         value.to_f64().unwrap(),
         SystemTime::now().duration_since(start).unwrap().as_micros()
     );
 
-    // Addition
+    println!("\nPerformance addition");
     let start = SystemTime::now();
     let mut value = SafeDecimal::from(0.1);
-    let multiplier = SafeDecimal::from(1.001);
-    println!("{:?} {:?}", value, multiplier);
+    let increment = SafeDecimal::from(1.001);
 
     for _ in 0..1000000 {
-        value = value + multiplier;
+        value = value + increment;
     }
 
     println!(
-        "Result a: {}, time: {}us",
+        "SafeDecimal: {}, time: {}us",
         value.to_float(),
         SystemTime::now().duration_since(start).unwrap().as_micros()
     );
@@ -111,15 +164,14 @@ fn it_compares_to_rational() {
     let start = SystemTime::now();
 
     let mut value = Rational64::from_f64(0.1).unwrap();
-    let multiplier = Rational64::from_f64(1.001).unwrap();
+    let increment = Rational64::from_f64(1.001).unwrap();
 
-    // It breaks down after just 6 multiplications...
     for _ in 0..1000000 {
-        value = value + multiplier;
+        value = value + increment;
     }
 
     println!(
-        "Result b: {}, time: {}us",
+        "Rational: {}, time: {}us",
         value.to_f64().unwrap(),
         SystemTime::now().duration_since(start).unwrap().as_micros()
     )

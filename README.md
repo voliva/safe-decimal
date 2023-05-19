@@ -12,6 +12,8 @@ TODO
 
 TODO
 
+But meanwhile, there's an explanation in this [article](https://github.com/voliva/safe-decimal/blob/main/article.md)
+
 ## License
 
 MIT

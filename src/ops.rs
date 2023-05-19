@@ -3,7 +3,7 @@ use std::fmt::LowerExp;
 use num_traits::Float;
 
 use crate::{
-    double::{exponential_form, from_exponential_from},
+    double::{construct_float, exponential_form, from_exponential_from, parse_float},
     SafeDecimal,
 };
 
@@ -35,7 +35,7 @@ impl<T: Float> SafeDecimal<T> {
     }
 }
 
-impl<T: Float> std::ops::Add<SafeDecimal<T>> for SafeDecimal<T> {
+impl<T: Float + std::fmt::Debug> std::ops::Add<SafeDecimal<T>> for SafeDecimal<T> {
     type Output = Self;
 
     fn add(self, rhs: SafeDecimal<T>) -> Self::Output {
@@ -50,10 +50,10 @@ impl<T: Float> std::ops::Add<SafeDecimal<T>> for SafeDecimal<T> {
         let denominator = self.denominator * b;
 
         // Then the numerator we also just need to cross that.
-        SafeDecimal {
+        reduce_exponent(SafeDecimal {
             numerator: self.numerator * b + rhs.numerator * a,
             denominator,
-        }
+        })
     }
 }
 
@@ -76,13 +76,13 @@ impl<T: Float> std::ops::Neg for SafeDecimal<T> {
     }
 }
 
-impl<T: Float> std::ops::Sub for SafeDecimal<T> {
-    type Output = Self;
+// impl<T: Float> std::ops::Sub for SafeDecimal<T> {
+//     type Output = Self;
 
-    fn sub(self, rhs: Self) -> Self::Output {
-        self + -rhs
-    }
-}
+//     fn sub(self, rhs: Self) -> Self::Output {
+//         self + -rhs
+//     }
+// }
 
 impl<T: Float> std::ops::Mul for SafeDecimal<T> {
     type Output = Self;
@@ -96,10 +96,10 @@ impl<T: Float> std::ops::Mul for SafeDecimal<T> {
 
         let (self_num, rhs_den) = simplify_factors(self.numerator, rhs.denominator);
         let (rhs_num, self_den) = simplify_factors(rhs.numerator, self.denominator);
-        SafeDecimal {
+        reduce_exponent(SafeDecimal {
             numerator: self_num * rhs_num,
             denominator: self_den * rhs_den,
-        }
+        })
     }
 }
 
@@ -139,6 +139,26 @@ fn simplify_factors<T: Float>(a: T, b: T) -> (T, T) {
         from_exponential_from(a_sign, a_int_simplified, a_exp_simplified),
         from_exponential_from(b_sign, b_int_simplified, b_exp_simplified),
     );
+}
+
+fn reduce_exponent<T: Float>(value: SafeDecimal<T>) -> SafeDecimal<T> {
+    if value.numerator == num_traits::zero() {
+        return SafeDecimal {
+            numerator: num_traits::zero(),
+            denominator: num_traits::one(),
+        };
+    }
+
+    let (n_sign, n_exp, n_mant) = parse_float(value.numerator);
+    let (d_sign, d_exp, d_mant) = parse_float(value.denominator);
+
+    let exp_sum = n_exp + d_exp;
+    let exp_change = exp_sum / 2;
+
+    return SafeDecimal {
+        numerator: construct_float::<T>(n_sign, n_exp - exp_change, n_mant),
+        denominator: construct_float::<T>(d_sign, d_exp - exp_change, d_mant),
+    };
 }
 
 fn gcd(a: u64, b: u64) -> u64 {
