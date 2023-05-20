@@ -42,7 +42,7 @@ In base 10, when you have a number for instance `12.34`, what this is actually r
 
 The decimal representation only means a sum of values, where every position is just a different factor of the base it's using, in this case base 10.
 
-Starting from the decimal separator, to the left side they keep raising 10^n - The first value is the units (10^0), the second value is the tens (10^1), the third value is the hundreds (10^100) and so on.
+Starting from the decimal separator, to the left side they keep raising 10<sup>n</sup> - The first value is the units (10<sup>0</sup>), the second value is the tens (10<sup>1</sup>), the third value is the hundreds (10<sup>2</sup>) and so on.
 
 And from the decimal separator to the right side, it's the opposite: it divides them by each power of ten. So the first digit is multiplied by 1/10, the second digit is multiplied by 1/100, and so on.
 
@@ -65,7 +65,7 @@ To get the decimal representation in any base, we can use an algorithm that's re
 5.3125 -> 101.0101 = 4 + 1 + 1/4 + 1/16
 ```
 
-`5.3125` in base 10 is represented as `101.0101` in binary, and the result is exact.
+`5.3125` is represented as `101.0101` in binary, and the result is exact.
 
 However, a problem arises if we try to represent `0.3` in binary, because we find ourselves in a loop when running the algorithm above:
 
@@ -87,7 +87,7 @@ However, a problem arises if we try to represent `0.3` in binary, because we fin
 0   .  0     1    0    0    1    1   0 ...
 ```
 
-So `0.3` in base 10 is `0.01001100110011001...` with 1001 recurring in base 2. And now we have a problem, because double precision floats have a mantissa of 52 bits, which is really long, but it can only fit the first 52 digits out of the infinite many others.
+So `0.3` represented in base 2 is `0.01001100110011001...` with 1001 recurring. And now we have a problem, because double precision floats have a mantissa of 52 bits, which is really long, but it can only fit the first 52 digits out of the infinite many others.
 
 Note how the amount of decimals or the precision of floats doesn't have a play in here. `5.3125` has more decimal digits than `0.3` in base 10, but `5.3125` can be represented exactly in base 2 (it only has 4 binary decimals) whereas `0.3` can't because it has infinite many binary decimals.
 
@@ -95,7 +95,7 @@ Note how the amount of decimals or the precision of floats doesn't have a play i
 >
 > It happens that when adding `0.1 + 0.2` it's adding two slightly larger numbers (because they can't be represented accurately either), and that results with a value slightly larger than 0.3 that doesn't get rounded to "0.3" but to 0.30000000000000004.
 
-Our base 10 system also has the same problem for a lot of other numbers. Let's say we want to transform "0.1" in base 7 to base 10. 0.1 in base 7 just means the result of the fraction `1/7`. We can apply the same algorithm to get the decimal representation but in our base:
+Our base 10 system also has the same problem for a lot of other numbers. Let's say we want to transform `0.1` in base 7 to base 10. `0.1` in base 7 just means the result of the fraction `1/7`. We can apply the same algorithm to get the decimal representation but in our base:
 
 ```
 10^-1 -> 1/7 * 10 = 10/7 = 1 + 3/7 -> [1]
@@ -124,7 +124,7 @@ As an example, in base 10, all numbers that have a denominator composed only by 
 
 For this reason, `1/10`, `1/5` and `3/10` have recurring decimals in base 2: They all have `5` as factor on the denominator. `5.3125` on the other hand doesn't have any recurring decimal, because it's `85 / 16`, and 16 is a power of 2.
 
-So the problem comes exclusively from this fact. When working in binary, the only numbers that can be represented exactly in decimal form are the ones which are divided by powers of 2, whereas in our base 10 we don't have this problem for the ones that are also divided by powers of 5. When you have recurring decimals, at some point you need to "cut" and all of that precision gets lost.
+So the problem comes exclusively from this fact. When working in binary, the only numbers that can be represented exactly in decimal form are the ones which are divided by powers of 2. In base 10 we can also represent numbers which are also divided by powers of five, and these just can't get accurately transformed to binary. When you have recurring decimals, at some point you need to "cut" and all of that precision gets lost.
 
 But this is completely independent from floating point vs fixed point. Floating point only means that the decimal point can be moved left or right, keeping the original value by multiplying an exponent. In essence, floating point numbers store the number in scientific notation.
 
@@ -162,7 +162,7 @@ Stored as [0,0,0,0,3,3,3,3]
 Stored as [0,0,0,0,1,4,2,8]
 ```
 
-As you can see, by moving from floating point to fixed point, we lost 2 digits of precision.
+As you can see, by moving from floating point to fixed point, we lost 3 digits of precision.
 
 I know, you could reserve more space for the decimal part on the fixed point format, but then you lose range on the integer part, whereas on floating point with the current format it can go all the way from 10^-4 up to 10^5.
 
@@ -174,7 +174,7 @@ Each representation has pros and cons, but the one that's most commonly used is 
 
 A common way of fixing this is to avoid decimals altogether, usually multiplying these numbers by powers of 10. For instance, applications that work with numbers that are usually divided into hundreds (e.g. currencies with cents as division) store numeric values as "number of cents", essentially multiplying every value by 100. This is actually fixed point arithmetic, but applied before parsing it into binary, reserving 2 base-10 digits as decimal part.
 
-However, when doing this you lose on flexibility. It works really well if all you have to do is add up numbers and you know all of them will have a specific amount of digits on base 10.
+However, when doing this you lose on flexibility. It works really well if all you have to do is add numbers and you know all of them will have a specific amount of digits on base 10.
 
 But this won't work if you deal with numbers with an arbitrary amount of decimals, or if you have to divide, where you can very easily lose precision. And it also makes multiplication trickier, since you have to shift the value to get the correct result (often resulting in more loss of precision).
 
@@ -182,7 +182,7 @@ But this won't work if you deal with numbers with an arbitrary amount of decimal
 
 Another common way of solving this is by using a really big amount of decimal places, coupled with some rounding to have less chance of having this error show up.
 
-This is used by many libraries such as BigDecimal, BigNumber, etc. and most of the time it works. However, it's still not guaranteed, most of this libraries surface the same problem again if you divide a number twice.
+This is used by many libraries such as BigDecimal, BigNumber, etc. and most of the time it works. However, it's still not guaranteed, most of this libraries surface the same recurring decimal issue if you invert a number twice.
 
 And sometimes you need to apply some custom rounding which can get wrong values (e.g. doing a Rounding.CEIL on a number that became 0.30000...00001 will give you 0.31)
 
@@ -233,15 +233,15 @@ All of the results are exact, and this makes sense because when adding or subtra
 
 The only basic arithmetic operation that can give recurring decimals is division. 1 and 3 are both safe numbers, but if you divide 1/3 it gives back 0.333... which has recurring decimals.
 
-The other big limitation of only using safe numbers is that it excludes all of the other numbers (of course).
+The other big limitation of only using safe numbers is that they are discrete, it can't represent all the numbers that rationals do.
 
-Looks like safe numbers are the key to the solution, but is there a way we can solve both of these problems?
+Looks like safe numbers are the key to the solution, but is there a way we can solve these two limitations?
 
 ## What if...
 
-What if we delay the execution of divisions as much as possible, while still using "safe numbers"? All we need to do is just store 2 safe numbers `a` and `b` which together represent the division `a/b`. It's like rational numbers, but where the numbers can actually be decimals too.
+What if we delay the execution of divisions as much as possible, while still using "safe numbers"? Essentially it's like having rational numbers but where the individual numbers can be decimals too. All we need to do is just store 2 safe numbers `a` and `b` which together represent the division `a/b`.
 
-This should actually solve both of the limitations safe numbers have when alone, since we won't have any division happening until we need to show the number and we can represent any other rational number, because this solution extends rationals (where both parts are integers).
+This should actually solve both of the limitations safe numbers by themselves. The division operation not being safe is gone because we don't need to divide, and we can represent every rational number because this is a superset of them (integers are also safe numbers).
 
 For example, 3.35 is not representable in binary in exact form. But we can transform this number to a pair `a / b = 5.234375 / 1.5625 = 3.35` where both a and b are safe numbers. They don't have any recurring decimal when represented in base 2: `5.234375 -> 101.001111` and `1.5625 -> 1.1001`.
 
@@ -257,7 +257,7 @@ I've implemented this in Rust, and a Typescript implementation is on the way. Yo
 
 [BigDecimal](https://crates.io/crates/bigdecimal) is a rust library for Arbitrary-precision decimal numbers. Internally uses a BigInt to store as many decimals as needed.
 
-The first advantage SafeDecimal (using two floats) has against this kind of library is from a bug I faced when I divided a number (currency) by a factor (exchange rate) which was inverted in another place of the code.
+The first advantage SafeDecimal has against this kind of library is from a bug I faced when I divided a number (currency) by a factor (exchange rate) which was inverted in another place of the code.
 
 Let's imagine 0.6 as a rate, and 9 as a currency value:
 
