@@ -12,6 +12,7 @@ mod iter_pad;
 mod ops;
 mod ord;
 mod parsing;
+mod wasm;
 
 #[derive(Debug, Clone, Copy)]
 pub struct SafeDecimal<T> {

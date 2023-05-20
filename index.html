@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <title>hello-wasm example</title>
+  </head>
+  <body>
+    <script type="module">
+      import init, { SafeDecimalJS } from "./pkg/safe_decimal.js";
+
+      init().then(() => {
+        const a = SafeDecimalJS.from(0.1);
+        const b = SafeDecimalJS.from(0.1);
+        console.log(a.add(b));
+      });
+    </script>
+  </body>
+</html>
