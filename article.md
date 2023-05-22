@@ -24,7 +24,7 @@ There's a common misconception that this problem is due to the fact that compute
 
 However, that's not exactly right. In fact, fixed point numbers usually have less precision than floating point numbers, so in most of the cases it would even have a bigger error.
 
-To understand this better, first we need to remember what are decimals
+To understand this better, first we need to remember what decimals are.
 
 ## Decimals in depth
 
@@ -87,9 +87,9 @@ However, a problem arises if we try to represent `0.3` in binary, because we fin
 0   .  0     1    0    0    1    1   0 ...
 ```
 
-So `0.3` represented in base 2 is `0.01001100110011001...` with 1001 recurring. And now we have a problem, because double precision floats have a mantissa of 52 bits, which is really long, but it can only fit the first 52 digits out of the infinite many others.
+So `0.3` represented in base 2 is `0.01001100110011001...` with 1001 recurring. And now we have a problem, because double precision floats have a mantissa of 52 bits, which is really long, but it can only fit the first 52 digits out of the infinitely many others.
 
-Note how the amount of decimals or the precision of floats doesn't have a play in here. `5.3125` has more decimal digits than `0.3` in base 10, but `5.3125` can be represented exactly in base 2 (it only has 4 binary decimals) whereas `0.3` can't because it has infinite many binary decimals.
+Note how the amount of decimals or the precision of floats doesn't have a play in here. `5.3125` has more decimal digits than `0.3` in base 10, but `5.3125` can be represented exactly in base 2 (it only has 4 binary decimals) whereas `0.3` can't because it has infinite binary decimals.
 
 > You might be asking "How come if 0.3 isn't representable as a binary number, computers can still print it after storing it to a variable?" As part of transforming a number to a string they just apply some rounding up to some decimals, which depends on the implementation. So even though 0.3 becomes `0.2999999999999999888977697537...` when represented as a double precision binary float, when it's printed out it's rounded to "0.3".
 >
@@ -120,11 +120,11 @@ So in a parallel universe where we use base 7, we would face the issue where we 
 
 This raises a question: What makes a number have a finite amount of decimals for a given a base? The answer is any rational number that has a denominator composed with factors from the base.
 
-As an example, in base 10, all numbers that have a denominator composed only by 2 and 5 (which are the factors of 10) will be represented exactly: 4/10 = 0.4, 1/5 = 0.2, 1/25 = 0.04 and so on. But any that has any other prime factor in the denominator will have infinite many decimals: 4/30 = 0.1333..., 8/18 = 0.444...
+As an example, in base 10, all numbers that have a denominator composed only by 2 and 5 (which are the factors of 10) will be represented exactly: 4/10 = 0.4, 1/5 = 0.2, 1/25 = 0.04 and so on. But any that has any other prime factor in the denominator will have infinite decimals: 4/30 = 0.1333..., 8/18 = 0.444...
 
 For this reason, `1/10`, `1/5` and `3/10` have recurring decimals in base 2: They all have `5` as factor on the denominator. `5.3125` on the other hand doesn't have any recurring decimal, because it's `85 / 16`, and 16 is a power of 2.
 
-So the problem comes exclusively from this fact. When working in binary, the only numbers that can be represented exactly in decimal form are the ones which are divided by powers of 2. In base 10 we can also represent numbers which are also divided by powers of five, and these just can't get accurately transformed to binary. When you have recurring decimals, at some point you need to "cut" and all of that precision gets lost.
+So the problem comes exclusively from this fact. When working in binary, the only numbers that can be represented exactly in decimal form are the ones which are divided by powers of 2. In base 10 we can represent numbers which are also divided by powers of five, and these just can't get accurately transformed to binary. When you have recurring decimals, at some point you need to "cut" and all of that precision gets lost.
 
 But this is completely independent from floating point vs fixed point. Floating point only means that the decimal point can be moved left or right, keeping the original value by multiplying an exponent. In essence, floating point numbers store the number in scientific notation.
 
@@ -182,7 +182,7 @@ But this won't work if you deal with numbers with an arbitrary amount of decimal
 
 Another common way of solving this is by using a really big amount of decimal places, coupled with some rounding to have less chance of having this error show up.
 
-This is used by many libraries such as BigDecimal, BigNumber, etc. and most of the time it works. However, it's still not guaranteed, most of this libraries surface the same recurring decimal issue if you invert a number twice.
+This is used by many libraries such as BigDecimal, BigNumber, etc. and most of the time it works. However, it's still not guaranteed, as most of these libraries surface the same recurring decimal issue if you invert a number twice.
 
 And sometimes you need to apply some custom rounding which can get wrong values (e.g. doing a Rounding.CEIL on a number that became 0.30000...00001 will give you 0.31)
 
@@ -233,7 +233,7 @@ All of the results are exact, and this makes sense because when adding or subtra
 
 The only basic arithmetic operation that can give recurring decimals is division. 1 and 3 are both safe numbers, but if you divide 1/3 it gives back 0.333... which has recurring decimals.
 
-The other big limitation of only using safe numbers is that they are discrete, it can't represent all the numbers that rationals do.
+The other big limitation of only using safe numbers is that they are discrete, they can't represent all the numbers that rationals do.
 
 Looks like safe numbers are the key to the solution, but is there a way we can solve these two limitations?
 
@@ -245,7 +245,7 @@ This should actually solve both limitations safe numbers have by themselves. The
 
 For example, 3.35 is not representable in binary in exact form. But we can transform this number to a pair `a / b = 5.234375 / 1.5625 = 3.35` where both a and b are safe numbers. They don't have any recurring decimal when represented in base 2: `5.234375 -> 101.001111` and `1.5625 -> 1.1001`.
 
-This has the advantage vs Rational numbers that we can keep both a and b relatively small. By the point we start to lose precision it will be because we've used all the significant digits we have available, but because of the nature of floats only the least significant digits will be lost. On the other hand, in the case of rational numbers those integers can overflow which would result in a completely different number than the one intended.
+This has the advantage vs Rational numbers that we can keep both a and b relatively small. When we start to lose precision it will be because we've used all the significant digits we have available and, due to the nature of floats, only the least significant digits will be lost. On the other hand, in the case of rational numbers those integers can overflow which would result in a completely different number than the one intended.
 
 And because we're in the land of "safe numbers", we can add, subtract and multiply by using basic fraction arithmetic while staying in this land. And the only operation which we couldn't do, division, we can now just easily invert a number (swap `a` and `b`) and multiply it.
 
@@ -273,7 +273,7 @@ println!("BigDecimal {}", value.to_string());
 // Prints BigDecimal 5.3999999999999999999999999999999999999
 ```
 
-This issue (well, another one a [widely used JS library](https://github.com/MikeMcl/bignumber.js/issues/80)) is what brought me to dig deeper into these "Arbitrary precision" libraries and understand why this happens. I thought they were using rational numbers, but that's not the case. And this is what led me to think about how to solve this problem.
+This issue (well, another one in a [widely used JS library](https://github.com/MikeMcl/bignumber.js/issues/80)) is what brought me to dig deeper into these "arbitrary precision" libraries and understand why this happens. I thought they were using rational numbers, but that's not the case. And this is what led me to think about how to solve this problem.
 
 Next, on performance, SafeDecimal also has an edge. For small numbers multiplication it's already out by an order of magnitude - In pseudocode doing the following:
 
@@ -308,9 +308,9 @@ SafeDecimal: 2191.668133907863
  BigDecimal: 2191.66813390784270437847386791744251604426416... // 29.960 more decimals
 ```
 
-This shows the trade-off for SafeDecimal: It doesn't have arbitrary precision. In this example it has lost at the 11th decimal.
+This shows the trade-off for SafeDecimal: It doesn't have arbitrary precision. In this example it has a precision error at the 11th decimal.
 
-And lastly addition shows only small advantage
+And lastly addition shows only a small advantage:
 
 ```rs
 let mut value = 0.1;
@@ -325,7 +325,7 @@ SafeDecimal takes ~40ms whereas BigDecimal takes ~64ms
 
 ### Comparing with Rational
 
-The other approach that uses rationals instead, I'm using [num_rational](https://crates.io/crates/num_rational).
+The other approach uses rationals instead. For this example, I'm using [num_rational](https://crates.io/crates/num_rational).
 
 The advantage when using floats is that they don't overflow as integers do. The following loop panics with an overflow when using `Rational64` (which is using 2 i64 numbers) after just 5 iterations:
 
@@ -355,6 +355,6 @@ So we can't benchmark it with growing numbers because they quickly overflow. How
 
 This has been really interesting to explore, and I think the results look promising. It feels like it's a really good option for those applications where you don't need arbitrary precision, but you want to avoid running into the recurring decimal bug, while also having good performance.
 
-The implementation I've made it's not production-ready. I'd like to add more (and better) tests, and there are a few edge cases I'd like to define the behaviour (dealing with special float values such as NaN Inf), but feel free to have a look around and I'm also open to feedback.
+The implementation I've made it's not production-ready. I'd like to add more (and better) tests, and there are a few edge cases I'd like to define the behaviour (dealing with special float values such as `NaN`, `Infinity`), but feel free to have a look around and I'm also open to feedback.
 
 I'd also like to know if this was already explored by somebody else - I tried searching references on this but I couldn't find any.
