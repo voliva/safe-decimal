@@ -2,6 +2,12 @@
 name = "safe_decimal"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "Library that solves the recurring decimal problem with fractions"
+repository = "https://github.com/voliva/safe-decimal"
+readme = "README.md"
+keywords = ["rational", "decimal", "number", "bigdecimal", "bignumber"]
+categories = ["mathematics", "value-formatting"]
 
 [dependencies]
 num-traits = "0.2.15"

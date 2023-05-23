@@ -132,13 +132,13 @@ mod tests {
     fn its_able_to_decode_simple_repeating_decimals() {
         check_num_den(
             from_f64(10.0 / 21.0), // 1/3 + 1/7
-            10.0,
-            21.0,
+            1.25,
+            2.625,
         );
         check_num_den(
             from_f64(16.0 / 21.0), // 1/3 + 3/7
-            8.0,
-            10.5,
+            1.0,
+            1.3125,
         );
     }
 }
