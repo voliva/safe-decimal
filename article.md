@@ -91,7 +91,7 @@ So `0.3` represented in base 2 is `0.01001100110011001...` with 1001 recurring. 
 
 Note how the amount of decimals or the precision of floats doesn't have a play in here. `5.3125` has more decimal digits than `0.3` in base 10, but `5.3125` can be represented exactly in base 2 (it only has 4 binary decimals) whereas `0.3` can't because it has infinite binary decimals.
 
-> You might be asking "How come if 0.3 isn't representable as a binary number, computers can still print it after storing it to a variable?" As part of transforming a number to a string they just apply some rounding up to some decimals, which depends on the implementation. So even though 0.3 becomes `0.2999999999999999888977697537...` when represented as a double precision binary float, when it's printed out it's rounded to "0.3".
+> You might be asking "If 0.3 isn't representable as a binary number, how come computers can still print it after storing it to a variable?" As part of transforming a number to a string they just apply some rounding up to some decimals, which depends on the implementation. So even though 0.3 becomes `0.2999999999999999888977697537...` when represented as a double precision binary float, when it's printed out it's rounded to "0.3".
 >
 > It happens that when adding `0.1 + 0.2` it's adding two slightly larger numbers (because they can't be represented accurately either), and that results with a value slightly larger than 0.3 that doesn't get rounded to "0.3" but to 0.30000000000000004.
 
@@ -118,7 +118,7 @@ Our base 10 system also has the same problem for a lot of other numbers. Let's s
 
 So in a parallel universe where we use base 7, we would face the issue where we can't represent '0.1' in base 10, because that's 1/7 = 0.142857142857142857...
 
-This raises a question: What makes a number have a finite amount of decimals for a given a base? The answer is any rational number that has a denominator composed with factors from the base.
+This raises a question: What makes a number have a finite amount of decimals for a given base? The answer is any rational number that has a denominator composed with factors from the base.
 
 As an example, in base 10, all numbers that have a denominator composed only by 2 and 5 (which are the factors of 10) will be represented exactly: 4/10 = 0.4, 1/5 = 0.2, 1/25 = 0.04 and so on. But any that has any other prime factor in the denominator will have infinite decimals: 4/30 = 0.1333..., 8/18 = 0.444...
 
@@ -245,7 +245,7 @@ This should actually solve both limitations safe numbers have by themselves. The
 
 For example, 3.35 is not representable in binary in exact form. But we can transform this number to a pair `a / b = 5.234375 / 1.5625 = 3.35` where both a and b are safe numbers. They don't have any recurring decimal when represented in base 2: `5.234375 -> 101.001111` and `1.5625 -> 1.1001`.
 
-This has the advantage vs Rational numbers that we can keep both a and b relatively small. When we start to lose precision it will be because we've used all the significant digits we have available and, due to the nature of floats, only the least significant digits will be lost. On the other hand, in the case of rational numbers those integers can overflow which would result in a completely different number than the one intended.
+The main advantage over rational numbers is that we can keep both a and b relatively small. Any loss of precision will be because all available significant digits have been consumed and that loss will be in the least significant digits due to the nature of floats. On the other hand, in the case of rational numbers those integers can overflow which would result in a completely different number than the one intended.
 
 And because we're in the land of "safe numbers", we can add, subtract and multiply by using basic fraction arithmetic while staying in this land. And the only operation which we couldn't do, division, we can now just easily invert a number (swap `a` and `b`) and multiply it.
 
