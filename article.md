@@ -1,6 +1,6 @@
 ---
 title: Solving the "floating point precision" problem with... floats?
-published: false
+published: true
 description: This article explores a different way of solving the error when adding two decimal numbers, by representing them into "safe versions" of a ratio between two floats.
 tags: floats, arithmetic, rust, javascript
 # cover_image: https://direct_url_to_image.jpg
@@ -200,6 +200,8 @@ Is there any way we can avoid the original problem without using bigints, number
 
 Let's focus on what makes a number representable in base 2 without recurring decimals. Let's call these **safe numbers** in short.
 
+> Edit: @programmerjake pointed out that the proper mathematical name of these numbers are [Dyadic rationals](https://en.wikipedia.org/wiki/Dyadic_rational): These are rational numbers that the denominator is a power of two, which is what's needed for a decimal number to not have recurring decimals when represented in base 2.
+
 If all we have are safe numbers, we can operate with them and we will get back another safe number:
 
 ```
@@ -241,7 +243,7 @@ Looks like safe numbers are the key to the solution, but is there a way we can s
 
 What if we delay the execution of divisions as much as possible, while still using "safe numbers"? Essentially it's like using rational numbers but where both the numerator and denominator can be decimals too. All we need to do is just store 2 safe numbers `a` and `b` which together represent the division `a/b`.
 
-This should actually solve both limitations safe numbers have by themselves. The division operation not being safe is gone because we don't need to divide, and we can represent every rational number because this is a superset of them (integers are also safe numbers).
+This should actually solve both limitations safe numbers have by themselves. The division operation not being safe is gone because we don't need to divide, and we can represent every rational number because they are also a division of two numbers, and integers are also safe numbers.
 
 For example, 3.35 is not representable in binary in exact form. But we can transform this number to a pair `a / b = 5.234375 / 1.5625 = 3.35` where both a and b are safe numbers. They don't have any recurring decimal when represented in base 2: `5.234375 -> 101.001111` and `1.5625 -> 1.1001`.
 
@@ -358,3 +360,11 @@ This has been really interesting to explore, and I think the results look promis
 The implementation I've made it's not production-ready. I'd like to add more (and better) tests, and there are a few edge cases I'd like to define the behaviour (dealing with special float values such as `NaN`, `Infinity`), but feel free to have a look around and I'm also open to feedback.
 
 I'd also like to know if this was already explored by somebody else - I tried searching references on this but I couldn't find any.
+
+## Acknowledgments
+
+- @programmerjake: Corrections, Dyadic rationals
+- @josepot: Corrections
+- @bdellegrazie: Corrections
+- @riko: Corrections
+- @bruceharris: Corrections
