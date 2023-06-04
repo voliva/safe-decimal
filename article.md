@@ -81,7 +81,7 @@ However, a problem arises if we try to represent `0.3` in binary, because we fin
 ...
 // And it will keep going on forever, the value will never be 0.
 
-0.3 = 1/2 + 1/32 + 1/64 + 1/512 + ...
+0.3 = 1/4 + 1/32 + 1/64 + 1/512 + ...
 
 2^0 . 2^-1 2^-2 2^-3 2^-4 2^-5 2^-6 2^-7 ...
 0   .  0     1    0    0    1    1   0 ...
@@ -212,7 +212,7 @@ If all we have are safe numbers, we can operate with them and we will get back a
 5.3125 + 1.6875 = 7
 
 101.0101 -> 5.3125
-+ 1.1011 -> 1.6875
+- 1.1011 -> 1.6875
  11.1010 -> 3.625
 
 5.3125 - 1.6875 = 3.625
