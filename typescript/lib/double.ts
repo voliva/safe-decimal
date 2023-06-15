@@ -1,6 +1,11 @@
 
+const floatValue = new Float64Array(1);
+const floatBigint = new BigUint64Array(floatValue.buffer);
+
+
 export function parseDouble(value: number) {
-  let valueBits = new BigUint64Array(new Float64Array([value]).buffer)[0];
+  floatValue[0] = value;
+  let valueBits = floatBigint[0];
 
   // Least 52 bits are mantissa
   const mantissa = Number(valueBits & 0x00_0F_FF_FF__FF_FF_FF_FFn);
@@ -16,11 +21,14 @@ export function parseDouble(value: number) {
   return [sign, exponent, mantissa] as const
 }
 
+const bigintValue = new BigUint64Array(1);
+const bigintFloat = new Float64Array(bigintValue.buffer);
+
 export function constructDouble(sign: number, exponent: number, mantissa: number) {
   const signPart = BigInt(sign);
   const exponentPart = BigInt(exponent + 1023);
   const valueBits = ((signPart << 11n) | exponentPart) << 52n | BigInt(mantissa);
 
-  return new Float64Array(new BigUint64Array([valueBits]).buffer)[0];
+  bigintValue[0] = valueBits
+  return bigintFloat[0];
 }
-
