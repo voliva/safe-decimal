@@ -120,8 +120,9 @@ function fractionalPart2(fractionalPart: string): SafeFraction {
 
   const mantissa = fractionalPart
     .slice(0, 52)
+    .padEnd(52, "0")
     .split("")
-    .reduce((total, char) => ((total << 1) + char === "1" ? 1 : 0), 0);
+    .reduce((total, char) => total * 2 + (char === "1" ? 1 : 0), 0);
 
   return {
     n: constructDouble(0, exponent, mantissa),
@@ -147,7 +148,7 @@ function fractionalPart16(fractionalPart: string): SafeFraction {
   const base2 = fractionalPart
     .slice(0, 52 / 4)
     .split("")
-    .map((c) => base16Map[Number(c)] ?? "e")
+    .map((c) => base16Map[Number("0x" + c)] ?? "e")
     .join("");
   return fractionalPart2(base2);
 }
@@ -159,7 +160,7 @@ const radixMap: Record<string, number> = {
 };
 function extractPrefix(value: string): [boolean, number, bigint] {
   const isNegative = value.startsWith("-");
-  value = isNegative ? value.slice(1) : value;
+  value = isNegative || value.startsWith("+") ? value.slice(1) : value;
 
   const radixPrefix = value.slice(0, 2);
   const radix = radixMap[radixPrefix] ?? 10;
