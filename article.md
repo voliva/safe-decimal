@@ -253,7 +253,7 @@ And because we're in the land of "safe numbers", we can add, subtract and multip
 
 ## Comparison
 
-I've implemented this in Rust, and a Typescript implementation is on the way. You can find the [repo here](https://github.com/voliva/safe-decimal). I've called it SafeDecimal. I won't go in detail on the implementation, but let's compare it with the other usual approaches.
+I've implemented this in Rust and Typescript, you can find the [repo here](https://github.com/voliva/safe-decimal). I've called it SafeDecimal. I won't go in detail on the implementation, but let's compare it with the other usual approaches.
 
 ### Comparing with BigDecimal
 

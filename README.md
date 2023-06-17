@@ -2,7 +2,7 @@
 
 Library that solves the `0.1 + 0.2 != 0.3` problem with fractions, avoiding numbers with recurring decimals.
 
-WIP - This package is not exporting anything yet, and it's experimental
+WIP - This package is experimental
 
 ## Usage
 
