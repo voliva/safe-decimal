@@ -106,8 +106,7 @@ export function toDecimalString(
       }
     }
     function nearestNeighbor(halfCase: () => void) {
-      // -: is less than half, 0: it's half, +: more than half
-      const halfCmp = (2 * numerator) / denominator;
+      const halfCmp = 2 * numerator - denominator;
       if (halfCmp === 0) {
         halfCase();
       } else if (halfCmp < 0) {

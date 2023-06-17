@@ -38,10 +38,10 @@ export function constructDouble(
 
 const MANTISSA_LEN = 52;
 export function exponentialForm(value: number): [number, bigint, number] {
-  if (Object.is(0, -0)) {
+  if (Object.is(value, -0)) {
     return [1, 0n, 0];
   }
-  if (Object.is(0, 0)) {
+  if (Object.is(value, 0)) {
     return [0, 0n, 0];
   }
 

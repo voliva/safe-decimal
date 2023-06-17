@@ -26,7 +26,7 @@ export function simplifyFactors(a: number, b: number): [number, number] {
 
   // Remove common 2's: Just move them so that the sum of both is as close to 0 as possible.
   const expSum = aExp + bExp;
-  const expChange = expSum / 2;
+  const expChange = Math.trunc(expSum / 2);
   const aExpSimplified = aExp - expChange;
   const bExpSimplified = bExp - expChange;
 
@@ -48,7 +48,7 @@ export function reduceExponent(value: SafeFraction): SafeFraction {
   const [dSign, dExp, dMant] = parseDouble(value.d);
 
   const expSum = nExp + dExp;
-  const expChange = expSum / 2;
+  const expChange = Math.trunc(expSum / 2);
 
   return {
     n: constructDouble(nSign, nExp - expChange, nMant),

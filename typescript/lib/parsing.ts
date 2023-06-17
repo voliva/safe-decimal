@@ -96,8 +96,8 @@ function fractionalPart10(fractionalPart: string): SafeFraction {
   }
   fractionalPart = fractionalPart.slice(0, 22);
   const denominator = Math.pow(5, fractionalPart.length);
-  const correction = 2n ** BigInt(fractionalPart.length);
-  const numerator = BigInt(fractionalPart) / correction;
+  const correction = 2 ** fractionalPart.length;
+  const numerator = Number(fractionalPart) / correction;
 
   return {
     n: Number(numerator),

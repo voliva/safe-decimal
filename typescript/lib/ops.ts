@@ -19,8 +19,8 @@ export function inv(value: SafeFraction): SafeFraction | null {
 export function abs(value: SafeFraction): SafeFraction {
   if (value.n < 0) {
     return {
-      n: -value.d,
-      d: value.n,
+      n: -value.n,
+      d: value.d,
     };
   }
   return {
