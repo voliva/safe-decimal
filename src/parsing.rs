@@ -6,6 +6,9 @@ use crate::{double::construct_float, iter_pad::PadTrait, SafeDecimal};
 pub fn from_integer<T: Float>(integer: &str) -> Result<SafeDecimal<T>, ParseIntError> {
     let (is_negative, _, integer_numerator) = extract_prefix(integer)?;
 
+    // TODO if the number is out of range for f32/f64, maybe reducing it beforehand by increasing the denominator could help
+    // Also this function covers a subset of `from_parts`... I would delete it
+    // but then this todo bring it also to `from_parts`
     let parsed = SafeDecimal {
         numerator: T::from(integer_numerator).unwrap(),
         denominator: T::from(1).unwrap(),
@@ -16,6 +19,7 @@ pub fn from_integer<T: Float>(integer: &str) -> Result<SafeDecimal<T>, ParseIntE
     return Ok(parsed);
 }
 
+// TODO it's confusing having 2 `from_parts` functions
 pub fn from_parts<T: Float + std::fmt::Debug>(
     integer_part: &str,
     fractional_part: &str,
@@ -44,6 +48,8 @@ pub fn from_parts<T: Float + std::fmt::Debug>(
 pub fn fractional_part_10<T: Float>(
     fractional_part: &str,
 ) -> Result<SafeDecimal<T>, ParseIntError> {
+    // 5^22 < MAX_SAFE_INTEGER for f64, meaning past this point we're doomed to lose precision.
+
     let len = fractional_part.len().min(22);
     if len == 0 {
         return Ok(SafeDecimal {
