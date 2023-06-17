@@ -1,4 +1,4 @@
-import { FormatOptions, toDecimalString } from "./format";
+import { FormatOptions, toDecimalString, toNumber } from "./format";
 import { abs, add, cmp, div, eq, inv, mul, neg, sub } from "./ops";
 import { fromNumber, fromString } from "./parsing";
 import { SafeFraction } from "./safeFraction";
@@ -32,6 +32,9 @@ export class SafeDecimal implements SafeFraction {
   }
   public toFractionString() {
     return `${this.n}/${this.d}`;
+  }
+  public toNumber() {
+    return toNumber(this);
   }
 
   public inv() {

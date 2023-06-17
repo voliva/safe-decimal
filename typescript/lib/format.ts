@@ -164,3 +164,7 @@ export function toDecimalString(
 
   return sign + integerPart.toString(fullOptions.radix) + decimalStr;
 }
+
+export function toNumber(value: SafeFraction) {
+  return value.n / value.d;
+}
