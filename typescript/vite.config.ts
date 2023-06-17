@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(__dirname, "lib/main.ts"),
+      entry: resolve(__dirname, "lib/index.ts"),
       name: "safe_decimal",
       // the proper extensions will be added
       fileName: "safe_decimal",

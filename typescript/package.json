@@ -1,14 +1,41 @@
 {
-  "name": "safe_decimal",
+  "name": "safe-decimal",
   "version": "0.1.0",
+  "license": "MIT",
+  "author": "Víctor Oliva",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voliva/safe-decimal.git"
+  },
+  "keywords": [
+    "rational",
+    "decimal",
+    "number",
+    "bigdecimal",
+    "bignumber"
+  ],
+  "description": "Library that solves the recurring decimal problem with fractions",
   "type": "module",
+  "sideEffects": false,
   "scripts": {
-    "build": "tsc && vite build",
+    "build": "vite build && tsc",
     "test": "vitest"
   },
   "devDependencies": {
     "typescript": "^5.0.2",
     "vite": "^4.3.9",
     "vitest": "^0.32.0"
-  }
+  },
+  "exports": {
+    "import": "./dist/safe_decimal.js",
+    "require": "./dist/safe_decimal.umd.cjs"
+  },
+  "module": "./dist/safe_decimal.js",
+  "main": "./dist/safe_decimal.umd.cjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist",
+    "./README.md",
+    "./tsconfig.json"
+  ]
 }
