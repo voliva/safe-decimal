@@ -146,6 +146,7 @@ pub fn to_decimal<T: Float + PartialOrd>(
         }
 
         // Multiply a/b by radix, extract integer, repeat.
+        // TODO radix :)
         numerator = numerator * T::from(10).unwrap();
         let div_result = (numerator / denominator).trunc();
         decimal_part.push(div_result.to_u8().unwrap());
@@ -169,6 +170,7 @@ pub fn to_decimal<T: Float + PartialOrd>(
         }
     }
 
+    // TODO radix
     let decimal_str = decimal_part
         .into_iter()
         .map(|d| char_to_str(d))
